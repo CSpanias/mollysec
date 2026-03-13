@@ -1,0 +1,23 @@
+baseURL = 'https://mollysec.com/'
+languageCode = 'en-us'
+title = 'MollySec'
+theme = 'clarity'
+
+[params]
+  author = 'Your Name'
+  description = 'Security research and technical writeups'
+  introDescription = 'Welcome to MollySec'
+  
+[menu]
+  [[menu.main]]
+    name = 'Home'
+    url = '/'
+    weight = 1
+  [[menu.main]]
+    name = 'Posts'
+    url = '/posts/'
+    weight = 2
+  [[menu.main]]
+    name = 'About'
+    url = '/about/'
+    weight = 3
