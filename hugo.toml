@@ -10,7 +10,7 @@ theme = 'clarity'
   footerLogo = '/images/mollysec-logo-32x32.png'
   twitterCard = 'summary_large_image'  # For Twitter previews
   openGraph = true
-  favicon = '/images/favicon.ico'
+  favicon = '/icons/favicon.ico'
   
 [params.author]
   name = 'Your Name'

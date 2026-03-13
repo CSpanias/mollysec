@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>MollySec</title>
-    <link>http://localhost:1313/</link>
-    <description>Recent content on MollySec</description>
+    <title>Posts on MollySec</title>
+    <link>http://localhost:1313/posts/</link>
+    <description>Recent content in Posts on MollySec</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <managingEditor>your.email@example.com (Your Name)</managingEditor>
     <webMaster>your.email@example.com (Your Name)</webMaster>
-    <lastBuildDate>Fri, 13 Mar 2026 12:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 13 Mar 2026 12:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Password Audits</title>
       <link>http://localhost:1313/posts/password-audit/</link>
