@@ -6,10 +6,16 @@ theme = 'clarity'
 [params]
   description = 'Security research and technical writeups'
   introDescription = 'Welcome to MollySec'
+  logo = '/images/mollysec-logo-32x32.png'
+  footerLogo = '/images/mollysec-logo-32x32.png'
   
 [params.author]
   name = 'Your Name'
   email = 'your.email@example.com'
+
+[params.social]
+    github = ''
+    linkedin = ''
   
 [menu]
   [[menu.main]]
