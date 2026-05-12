@@ -97,7 +97,7 @@ On various occasions, I had an idea of what the attack vector might be, and I fo
 
 Answering these questions almost always led me to the next step.
 
-## Practice
+# Practice
 
 After completing the path, I had about one month until the exam. My initial plan was to tackle the Cybernetics pro lab. Due to environment issues, I was spending more time troubleshooting and waiting for hosts to come back alive rather than practicing, so I had to let that idea go real quick. As an alternative, I started working on individual AD boxes instead.
 

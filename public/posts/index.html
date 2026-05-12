@@ -191,15 +191,13 @@ Organising secrets How the current tool (secretsorganise) works exactly? Are the
     </h2>
   </header>
   <div class="entry-content">
-    <p>Introduction Pre-requisites Plaintext passwords are typically stored in the server’s database as hashes. In an Active Directory (AD) environment, the server is the Key Distribution Centre (KDC), the database is the NT Directory Services Directory Information Tree (NTDS.dit or just NTDS), and the hash format is New Technology Lan Manager (NTLM).
-A password converted into an NTLM hash looks like this:
-$ echo -n &#39;Passw0rd123!&#39; | iconv -t utf16le | openssl md4 -provider legacy MD4(stdin)= ab4f5a5c42df5a0ee337d12ce77332f5 When a user logs into a domain-joined machine, the process looks as follows:
+    <p>Comparison Matrix (Audit-Relevant Methods) Method Speed DC Impact Network Traffic Disk Space (DC) DRSUAPI Fast (minutes) Minimal Low (~100MB) None VSS/NTDSUTIL Medium (15-30min) Low High (10GB&#43;) Temporary (~10GB) VSS/WMI Medium (15-30min) Low High (10GB&#43;) Temporary (~10GB) Kerb-Key-List Fast (minutes) Minimal Low None The real difference: -use-vss: Uses ntdsutil.exe (Microsoft’s official AD backup tool) to create an IFM export, which internally uses shadow copies -use-remoteSSWMI-NTDS: Uses vssadmin.exe via WMI to directly create and access shadow copies
 ...</p>
   </div>
   <footer class="entry-footer">
 
 <span title='2026-03-13 00:00:00 +0000 UTC'>March 13, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
-  <a class="entry-link" aria-label="post link to NTDS Extraction Methods" href="http://localhost:1313/posts/password-audits-part-1-copy/"></a>
+  <a class="entry-link" aria-label="post link to NTDS Extraction Methods" href="http://localhost:1313/posts/password-audits-part-1-extra/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -216,7 +214,7 @@ $ echo -n &#39;Passw0rd123!&#39; | iconv -t utf16le | openssl md4 -provider lega
   <div class="entry-content">
     <p>What about Password “Audits”? Note: This article focuses on the, one-level deep, technical mechanics of NTDS extraction during pentests. OPSEC considerations are out of scope. Sorry!
 I recently went from testing (close-to-zero-functionality) APIs to testing, almost, everything. I am talking about web apps, GraphQL APIs, cloud configs, build reviews, external and internal assessments, the whole shebang.
-It sounds like a lot, isn’t? I might need to ask for a raise…
+One part of internal testing is conducting a Password Audit, which can be summed up as follows:
 ...</p>
   </div>
   <footer class="entry-footer">
