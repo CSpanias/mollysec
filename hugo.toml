@@ -11,9 +11,7 @@ theme = 'PaperMod'
   twitterCard = 'summary_large_image'  # For Twitter previews
   openGraph = true
   favicon = 'images/mollysec-logo-32x32.png'
-  
-[params.author]
-  name = 'mollysec'
+  author = 'mollysec'
 
 [params.social]
     email = 'spaniascharalampos@gmail.com'
@@ -33,7 +31,3 @@ theme = 'PaperMod'
     name = 'About'
     url = '/about'
     weight = 3
-  [[menu.main]]
-    name = 'Contact'
-    url = '/contact'
-    weight = 4
