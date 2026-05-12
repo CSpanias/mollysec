@@ -1,13 +1,13 @@
 ---
 title: "My Take on CAPE"
-date: "2026-05-11"
+date: "2026-05-12"
 author: "mollysec"
 description: "My experience taking Hack the Box's Certified Active Directory Pentesting Expert Exam."
 featured: true
-tags: ["hack the box","htb","active directory pentesting expert","cape"]
+tags: ["hack the box","htb","certified active directory pentesting expert","cape"]
 categories: ["review"]
 series: ""
-draft: true
+draft: false
 ---
 
 # Introduction
@@ -78,7 +78,7 @@ Then it's up to you how you go from there.
 
 As others have already said (see [here](https://lorenzomeacci.com/htb-cape-review#tips-for-the-exam) and [here](https://thepastamentor.github.io/cape-prep-guide.html#essential-tooling)), enumeration is the name of the game. 
 
-What I found most interesting about the lab, is that although almost every attack vector is taught during the course (i.e., yes CAPE should be "enough" to pass the exam), the attack itself is never straightforward. The environment is designed in such a way that tries its best to really test your understanding of each attack.
+What I found most interesting about the lab, is that although almost every attack vector is taught during the course (yes, CAPE should be "enough" to pass the exam), the attack itself is never straightforward. The environment is designed in such a way that tries its best to really test your understanding of each attack.
 
 If you expect to gather domain data and let BloodHound lay out the attack path for you, you will be disappointed. The lab requires to level up your enumeration and be able to sniff out an attack vector by seeing scattered pieces here and there. It looks something like this:
 
@@ -103,7 +103,9 @@ After completing the path, I had about one month until the exam. My initial plan
 
 Below is a list of retired boxes that I believe to be a good practice to get you in the required mindset. I should note, that these boxes are not relevant in a sense that they have the same attack vectors with the actual exam, but rather that they force you to think in a similar way and practice core AD concepts.
 
-As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag means that "smart" (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.
+My approach when tackling boxes is to first let myself "grind" for a bit. If I am confident that I have tried everything I know and still can't get through it, then I opt for a walkthrough, either from [0xdf](https://0xdf.gitlab.io/) or [IppSec](https://www.youtube.com/@ippsec). For context, I needed hints to solve most of these boxes and still did OK in CAPE, so treat them as a way to learn new things, don't try to reinvent the wheel.
+
+As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag on the table means that "smart" (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.
 
 | Box | Rating | Relevancy |
 | --- | ------ | --------- |
@@ -129,8 +131,6 @@ As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff
 What I would highly recommend is that even if BloodHound lays down a path for you (e.g. `poppy` has `WriteOwner` over `henry`), try to then take a step back and go about enumerating that "manually" as if you did not have BloodHound available (e.g. using `dacledit.py` or any other similar tool). Ask yourself:
 - How would I go about checking what permissions each object might have on all other domain objects with just a userlist at hand?
 - How do I enumerate the specific element that I am missing for what I think is the potential attack vector for moving forward?
-
-My approach when tackling boxes is to first let myself "grind" for a bit. If I am confident that I have tried everything I know and still can't get through it, then I opt for a walkthrough, either from [0xdf](https://0xdf.gitlab.io/) or [IppSec](https://www.youtube.com/@ippsec). For context, I needed hints to solve most of these boxes and still did OK in CAPE, so treat them as a way to learn things you don't know, don't try to reinvent the wheel.
 
 # Final Thoughts
 

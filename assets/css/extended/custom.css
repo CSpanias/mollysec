@@ -1,9 +1,14 @@
-.post-content {
-  max-width: 750px;
-  margin: auto;
-}
-
 body {
   font-size: 18px;
   line-height: 1.7;
+}
+
+/* Increase content width */
+.main {
+    --main-width: 850px !important;
+}
+
+/* Ensure post content uses full width */
+.post-content {
+    max-width: 100% !important;
 }

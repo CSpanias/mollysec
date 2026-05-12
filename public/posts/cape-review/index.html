@@ -6,11 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="robots" content="noindex, nofollow">
 <title>My Take on CAPE | mollysec</title>
-<meta name="keywords" content="hack the box, htb, active directory pentesting expert, cape">
+<meta name="keywords" content="hack the box, htb, certified active directory pentesting expert, cape">
 <meta name="description" content="My experience taking Hack the Box&#39;s Certified Active Directory Pentesting Expert Exam.">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/cape-review/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.d15f42ea70aee180ff9803eba07257f2411ca73a1d416903e72edd303cde3d46.css" integrity="sha256-0V9C6nCu4YD/mAProHJX8kEcpzodQWkD5y7dMDzePUY=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.d96a8946d22452f752dffb214c0167ff2e93dc42eab51e40fc67620b9e047820.css" integrity="sha256-2WqJRtIkUvdS3/shTAFn/y6T3ELqtR5A/GdiC54EeCA=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
@@ -120,19 +120,13 @@
     
     <h1 class="post-title entry-hint-parent">
       My Take on CAPE
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
     </h1>
     <div class="post-description">
       My experience taking Hack the Box&#39;s Certified Active Directory Pentesting Expert Exam.
     </div>
     <div class="post-meta">
 
-<span title='2026-05-11 00:00:00 +0000 UTC'>May 11, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+<span title='2026-05-12 00:00:00 +0000 UTC'>May 12, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
 
 </div>
   </header> 
@@ -175,7 +169,7 @@
 <p>Then it&rsquo;s up to you how you go from there.</p>
 <h2 id="enumeration">Enumeration<a hidden class="anchor" aria-hidden="true" href="#enumeration">#</a></h2>
 <p>As others have already said (see <a href="https://lorenzomeacci.com/htb-cape-review#tips-for-the-exam">here</a> and <a href="https://thepastamentor.github.io/cape-prep-guide.html#essential-tooling">here</a>), enumeration is the name of the game.</p>
-<p>What I found most interesting about the lab, is that although almost every attack vector is taught during the course (i.e., yes CAPE should be &ldquo;enough&rdquo; to pass the exam), the attack itself is never straightforward. The environment is designed in such a way that tries its best to really test your understanding of each attack.</p>
+<p>What I found most interesting about the lab, is that although almost every attack vector is taught during the course (yes, CAPE should be &ldquo;enough&rdquo; to pass the exam), the attack itself is never straightforward. The environment is designed in such a way that tries its best to really test your understanding of each attack.</p>
 <p>If you expect to gather domain data and let BloodHound lay out the attack path for you, you will be disappointed. The lab requires to level up your enumeration and be able to sniff out an attack vector by seeing scattered pieces here and there. It looks something like this:</p>
 <ol>
 <li>Enumerate and collect data</li>
@@ -194,7 +188,8 @@
 <h2 id="practice">Practice<a hidden class="anchor" aria-hidden="true" href="#practice">#</a></h2>
 <p>After completing the path, I had about one month until the exam. My initial plan was to tackle the Cybernetics pro lab. Due to environment issues, I was spending more time troubleshooting and waiting for hosts to come back alive rather than practicing, so I had to let that idea go real quick. As an alternative, I started working on individual AD boxes instead.</p>
 <p>Below is a list of retired boxes that I believe to be a good practice to get you in the required mindset. I should note, that these boxes are not relevant in a sense that they have the same attack vectors with the actual exam, but rather that they force you to think in a similar way and practice core AD concepts.</p>
-<p>As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag means that &ldquo;smart&rdquo; (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.</p>
+<p>My approach when tackling boxes is to first let myself &ldquo;grind&rdquo; for a bit. If I am confident that I have tried everything I know and still can&rsquo;t get through it, then I opt for a walkthrough, either from <a href="https://0xdf.gitlab.io/">0xdf</a> or <a href="https://www.youtube.com/@ippsec">IppSec</a>. For context, I needed hints to solve most of these boxes and still did OK in CAPE, so treat them as a way to learn new things, don&rsquo;t try to reinvent the wheel.</p>
+<p>As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag on the table means that &ldquo;smart&rdquo; (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.</p>
 <table>
   <thead>
       <tr>
@@ -301,7 +296,6 @@
 <li>How would I go about checking what permissions each object might have on all other domain objects with just a userlist at hand?</li>
 <li>How do I enumerate the specific element that I am missing for what I think is the potential attack vector for moving forward?</li>
 </ul>
-<p>My approach when tackling boxes is to first let myself &ldquo;grind&rdquo; for a bit. If I am confident that I have tried everything I know and still can&rsquo;t get through it, then I opt for a walkthrough, either from <a href="https://0xdf.gitlab.io/">0xdf</a> or <a href="https://www.youtube.com/@ippsec">IppSec</a>. For context, I needed hints to solve most of these boxes and still did OK in CAPE, so treat them as a way to learn things you don&rsquo;t know, don&rsquo;t try to reinvent the wheel.</p>
 <h1 id="final-thoughts">Final Thoughts<a hidden class="anchor" aria-hidden="true" href="#final-thoughts">#</a></h1>
 <p>The bottom line is that CAPE wants you to succeed and is not designed to trick you in any way. Although, I found some elements that I ended up not using at all, I can&rsquo;t say that the exam had any major rabbit hole.</p>
 <p>If you approach the exam as a collection of predefined attacks which can be executed by simply copying and pasting commands from the course as they are, it will probably feel overwhelming. If you approach it as a system that you need to gradually understand and map out, you will probably do well and have fun in the process!</p>
@@ -313,7 +307,7 @@
     <ul class="post-tags">
       <li><a href="http://localhost:1313/tags/hack-the-box/">Hack the Box</a></li>
       <li><a href="http://localhost:1313/tags/htb/">Htb</a></li>
-      <li><a href="http://localhost:1313/tags/active-directory-pentesting-expert/">Active Directory Pentesting Expert</a></li>
+      <li><a href="http://localhost:1313/tags/certified-active-directory-pentesting-expert/">Certified Active Directory Pentesting Expert</a></li>
       <li><a href="http://localhost:1313/tags/cape/">Cape</a></li>
     </ul>
   </footer>
