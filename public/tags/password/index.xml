@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Password on MollySec</title>
+    <link>http://localhost:1313/tags/password/</link>
+    <description>Recent content in Password on MollySec</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-gb</language>
+    <managingEditor>spaniascharalampos@gmail.com.com (MollySec)</managingEditor>
+    <webMaster>spaniascharalampos@gmail.com.com (MollySec)</webMaster>
+    <lastBuildDate>Sat, 14 Mar 2026 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/password/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Password Audits Part 2: Hash Organisation</title>
+      <link>http://localhost:1313/posts/password-audits-part-2/</link>
+      <pubDate>Sat, 14 Mar 2026 00:00:00 +0000</pubDate>
+      <author>spaniascharalampos@gmail.com.com (MollySec)</author>
+      <guid>http://localhost:1313/posts/password-audits-part-2/</guid>
+      <description>
+        
+          
+            &lt;h1 id=&#34;introduction&#34;&gt;Introduction&lt;/h1&gt;
+&lt;p&gt;With NTDS.dit and the SYSTEM hive successfully extracted, we&amp;rsquo;re ready to proceed to the password cracking phase. The next section of this guide will cover hash extraction from the NTDS database, optimal Hashcat configuration for password auditing, and analysis techniques for identifying systemic password weaknesses in the organization.&lt;/p&gt;
+&lt;h1 id=&#34;organising-secrets&#34;&gt;Organising secrets&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;How the current tool (&lt;code&gt;secretsorganise&lt;/code&gt;) works exactly?&lt;/li&gt;
+&lt;li&gt;Are there other open-source tools that are better?&lt;/li&gt;
+&lt;li&gt;If not, can we make it better?&lt;/li&gt;
+&lt;li&gt;We crack the &lt;code&gt;[ALL]-[NTLM].txt&lt;/code&gt; file that outputs&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;output-handling-and-organization&#34;&gt;Output Handling and Organization&lt;/h1&gt;
+&lt;p&gt;Regardless of extraction method, we need to organize output files for efficient downstream processing. A standardized directory structure prevents confusion during multi-DC extractions and long-duration engagements.&lt;/p&gt;
+          
+          
+        
+      </description>
+    </item>
+    
+  </channel>
+</rss>

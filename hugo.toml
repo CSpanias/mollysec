@@ -1,24 +1,24 @@
 baseURL = 'https://mollysec.com/'
-languageCode = 'en-us'
-title = 'MollySec'
-theme = 'clarity'
+languageCode = 'en-gb'
+title = 'mollysec'
+theme = 'PaperMod'
 
 [params]
   description = 'Security research and technical writeups'
-  introDescription = 'Welcome to MollySec'
-  logo = '/images/mollysec-logo-32x32.png'
-  footerLogo = '/images/mollysec-logo-32x32.png'
+  introDescription = 'Welcome to mollysec'
+  logo = 'images/mollysec-logo-32x32.png'
+  footerLogo = 'images/mollysec-logo-32x32.png'
   twitterCard = 'summary_large_image'  # For Twitter previews
   openGraph = true
-  favicon = '/icons/favicon.ico'
+  favicon = 'images/mollysec-logo-32x32.png'
   
 [params.author]
-  name = 'Your Name'
-  email = 'your.email@example.com'
+  name = 'mollysec'
 
 [params.social]
-    github = ''
-    linkedin = ''
+    email = 'spaniascharalampos@gmail.com'
+    github = 'https://github.com/CSpanias'
+    linkedin = 'https://www.linkedin.com/in/charalamposspanias/'
   
 [menu]
   [[menu.main]]
@@ -31,9 +31,9 @@ theme = 'clarity'
     weight = 2
   [[menu.main]]
     name = 'About'
-    url = '/about/'
+    url = '/about'
     weight = 3
   [[menu.main]]
     name = 'Contact'
-    url = '/contact/'
+    url = '/contact'
     weight = 4

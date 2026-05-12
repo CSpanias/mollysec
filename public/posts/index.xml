@@ -1,32 +1,47 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Posts on MollySec</title>
+    <title>Posts on mollysec</title>
     <link>http://localhost:1313/posts/</link>
-    <description>Recent content in Posts on MollySec</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>en-us</language>
-    <managingEditor>your.email@example.com (Your Name)</managingEditor>
-    <webMaster>your.email@example.com (Your Name)</webMaster>
-    <lastBuildDate>Fri, 13 Mar 2026 12:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <description>Recent content in Posts on mollysec</description>
+    <generator>Hugo</generator>
+    <language>en-gb</language>
+    <lastBuildDate>Mon, 11 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Password Audits</title>
-      <link>http://localhost:1313/posts/password-audit/</link>
-      <pubDate>Fri, 13 Mar 2026 12:00:00 +0000</pubDate>
-      <author>your.email@example.com (Your Name)</author>
-      <guid>http://localhost:1313/posts/password-audit/</guid>
-      <description>
-        
-          
-            &lt;h1 id=&#34;welcome-to-my-first-post&#34;&gt;Welcome to My First Post&lt;/h1&gt;
-&lt;p&gt;This is the introduction to my first blog post.&lt;/p&gt;
-&lt;h2 id=&#34;section-1&#34;&gt;Section 1&lt;/h2&gt;
-&lt;p&gt;Here&amp;rsquo;s some detailed content.&lt;/p&gt;
-          
-          
-        
-      </description>
+      <title>My Take on CAPE</title>
+      <link>http://localhost:1313/posts/cape-review/</link>
+      <pubDate>Mon, 11 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/cape-review/</guid>
+      <description>My experience taking Hack the Box&amp;#39;s Certified Active Directory Pentesting Expert Exam.</description>
     </item>
-    
+    <item>
+      <title>Password Audits Part 3: Hash Analysis</title>
+      <link>http://localhost:1313/posts/password-audits-part-3/</link>
+      <pubDate>Sun, 15 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
+      <description>Article focusing the process of recovering hashes extracted from the NTDS.dit file (Active Directory&amp;#39;s database), during the password audit process.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 2: Hash Organisation</title>
+      <link>http://localhost:1313/posts/password-audits-part-2/</link>
+      <pubDate>Sat, 14 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-2/</guid>
+      <description>Article focusing the process of organizing the hashes extracted from the NTDS.dit file (Active Directory&amp;#39;s database), during the password audit process.</description>
+    </item>
+    <item>
+      <title>NTDS Extraction Methods</title>
+      <link>http://localhost:1313/posts/password-audits-part-1-copy/</link>
+      <pubDate>Fri, 13 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-1-copy/</guid>
+      <description>Article focusing the process of NTDS.dit file, Active Directory&amp;#39;s database, during the password audit process.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 1: NTDS Extraction</title>
+      <link>http://localhost:1313/posts/password-audits-part-1/</link>
+      <pubDate>Fri, 13 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-1/</guid>
+      <description>Article focusing the process of NTDS.dit file, Active Directory&amp;#39;s database, during the password audit process.</description>
+    </item>
   </channel>
 </rss>

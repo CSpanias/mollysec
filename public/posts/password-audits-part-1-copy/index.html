@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>NTDS Extraction Methods | mollysec</title>
+<meta name="keywords" content="">
+<meta name="description" content="Article focusing the process of NTDS.dit file, Active Directory&#39;s database, during the password audit process.">
+<meta name="author" content="mollysec">
+<link rel="canonical" href="http://localhost:1313/posts/password-audits-part-1-copy/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.d15f42ea70aee180ff9803eba07257f2411ca73a1d416903e72edd303cde3d46.css" integrity="sha256-0V9C6nCu4YD/mAProHJX8kEcpzodQWkD5y7dMDzePUY=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/password-audits-part-1-copy/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="mollysec (Alt + H)">mollysec</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/contact" title="Contact">
+                    <span>Contact</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      NTDS Extraction Methods
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h1>
+    <div class="post-description">
+      Article focusing the process of NTDS.dit file, Active Directory&#39;s database, during the password audit process.
+    </div>
+    <div class="post-meta">
+
+<span title='2026-03-13 00:00:00 +0000 UTC'>March 13, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<h1 id="pre-requisites">Pre-requisites<a hidden class="anchor" aria-hidden="true" href="#pre-requisites">#</a></h1>
+<p>Plaintext passwords are typically stored in the server&rsquo;s database as <a href="https://en.wikipedia.org/wiki/Cryptographic_hash_function">hashes</a>. In an Active Directory (AD) environment, the server is the <a href="https://learn.microsoft.com/en-us/windows/win32/secauthn/key-distribution-center">Key Distribution Centre (KDC)</a>, the database is the <a href="https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782">NT Directory Services Directory Information Tree</a> (NTDS.dit or just NTDS), and the hash format is <a href="https://learn.microsoft.com/en-us/windows/win32/secauthn/microsoft-ntlm#ntlm-noninteractive-authentication">New Technology Lan Manager (NTLM)</a>.</p>
+<p>A password converted into an NTLM hash looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ echo -n <span style="color:#e6db74">&#39;Passw0rd123!&#39;</span> | iconv -t utf16le | openssl md4 -provider legacy
+</span></span><span style="display:flex;"><span>MD4<span style="color:#f92672">(</span>stdin<span style="color:#f92672">)=</span> ab4f5a5c42df5a0ee337d12ce77332f5
+</span></span></code></pre></div><p>When a user logs into a domain-joined machine, the process looks as follows:</p>
+<figure>
+    <img loading="lazy" src="/images/hash-process.png"
+         alt="A user types his password, the password transforms into a hash, which is then compared with the one stored in the database." width="900"/> 
+</figure>
+
+<p>If the password hash matches the one stored in the database, authentication succeeds.</p>
+<p>An important thing to note is that this article is based around the context of an internal pentest. Therefore, we don&rsquo;t have to &ldquo;<em>hack</em>&rdquo; our way to DA, but we are handed a DA account by the client.</p>
+<h1 id="drsuapi-dcsync">DRSUAPI (DCSync)<a hidden class="anchor" aria-hidden="true" href="#drsuapi-dcsync">#</a></h1>
+<p>This is the default method of most tools and for good reason: it is fast as it avoids disk I/O entirely; all data is transmitted over the network via RPC (TCP 135) and dynamic high ports (TCP 49152-65535). If your are using this and it&rsquo;s failing for no apparent reason, check if those RCP ports are blocked!</p>
+<p>Within an AD domain, there are multiple Domain Controllers (DCs), and, for the authentication process to work harmoniously, every DC must have a copy of the same NTDS. This is achieved by the <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations">Replication</a> process; a process responsible for keeping every DC in sync with each other. This process happens on regular intervals via the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47">Directory Replication Service Remote Protocol (MS-DRSR)</a>; the protocol which DCs use to communicate and sync their databases with each other.</p>
+<p>The goal here is to make our host look like a DC and then ask a legit DC to sync with it; hence the name: <strong>DC-Sync</strong>. We should note that not everyone can ask for a DC to sync with them; that would be <a href="https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit">glaikit</a>. As we will soon see, two permissions are required for that and a DA account has both by default.</p>
+<figure>
+    <img loading="lazy" src="/images/look-at-me-i-am-the-dc-now.png"
+         alt="A meme saying: &#39;Look at me, I am the DC now&#39;." width="500"/> 
+</figure>
+
+<p>DRS has two RPC interfaces, but our focus here is on the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410">DRSUAPI</a> and its <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410"><code>IDL_DRS</code></a> methods. When we run Impacket&rsquo;s <code>secretsdump.py</code> (or NetExec&rsquo;s <code>--ntds</code>), we are triggering a sequence of DRS calls:</p>
+<h2 id="drs-calls">DRS Calls<a hidden class="anchor" aria-hidden="true" href="#drs-calls">#</a></h2>
+<h3 id="1-idl_drsbind---the-handshake">1. IDL_DRSBind - The Handshake<a hidden class="anchor" aria-hidden="true" href="#1-idl_drsbind---the-handshake">#</a></h3>
+<p>Before we can request anything, we first need to establish a connection with the DC by calling the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/605b1ea1-9cdc-428f-ab7a-70120e020a3d"><code>IDL_DRSBind</code></a> method. This creates a <code>DRS_HANDLE</code> (kind of a session token) that proves we&rsquo;ve successfully authenticated and are authorised to make replication requests. This handle remains valid for all subsequent operations until we explicitly call <code>IDL_DRSUnbind</code> or the server invalidates it (e.g., due to timeout or errors).</p>
+<p>Secretsdump establishes a DRS session with the DC via the <code>DRSBind</code> method by negotiating capabilities:</p>
+<figure>
+    <img loading="lazy" src="/images/impacket-drsuapi-1.png"
+         alt="The relevant code snippet from secretsdump." width="800"/> 
+</figure>
+
+<p>The key flags here are:</p>
+<ul>
+<li><code>NTDSAPI_CLIENT_GUID</code>: Identifies our host as a replication client to the DC.</li>
+<li><code>DRS_EXT_GETCHGREQ_V6/V8</code>: Protocol version negotiation, supports both older (2003) and newer (2008+) DCs.</li>
+<li><code>DRS_EXT_STRONG_ENCRYPTION</code>: Ensures AES-encrypted communication.</li>
+</ul>
+<p>When a tool fails with a <code>bind failed</code> error, something has gone wrong in this step.</p>
+<h3 id="2-idl_drsgetncchanges---replication">2. IDL_DRSGetNCChanges - Replication<a hidden class="anchor" aria-hidden="true" href="#2-idl_drsgetncchanges---replication">#</a></h3>
+<p>This is the step that replicates directory data from the DC to our host. To call the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894"><code>IDL_DRSGetNCChanges</code></a> function we need the <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes">Replicating Directory Changes</a> permission. However, just calling <code>IDL_DRSGetNCChanges</code> only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials.</p>
+<p>To get the actual credentials, we need to include the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813"><code>EXOP_REPL_SECRETS</code></a> flag; in order to do that, we need the <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all">Replicating Directory Changes All</a> permission.</p>
+<p>The <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-in-filtered-set">Replicating Directory Changes In Filtered Set</a> permission might also be needed when dealing with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/rodc-and-active-directory-schema">RODC</a>, but that had never happened to me during my extensive three months-career on internal tests.</p>
+<p>After the session is established, Secretsdump calls <code>DRSGetNCChanges</code> (including the <code>EXOP_REPL_OBJ</code> flag) for each user. An interesting thing to note is that the <code>uuidDsaObjDest</code>and <code>uuidInvocIdSrc</code> variables are the GUIDs that identify the destination and source DCs in a replication operation. Since we&rsquo;re not a real DC, secretsdump sets both to the target DC&rsquo;s GUID to make the request appear legitimate:</p>
+<figure>
+    <img loading="lazy" src="/images/impacket-drsuapi-2.png"
+         alt="The relevant code snippet from secretsdump." width="800"/> 
+</figure>
+
+<h3 id="3-idl_drsunbind---cleanup">3. IDL_DRSUnbind - Cleanup<a hidden class="anchor" aria-hidden="true" href="#3-idl_drsunbind---cleanup">#</a></h3>
+<p>Once the replication is completed, <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/49eb17c9-b6a9-4cea-bef8-66abda8a7850"><code>IDL_DRSUnbind</code></a> is called to explicitly close the connection and release the <code>DRS_HANDLE</code>. Interestingly, secretsdump doesn&rsquo;t explicitly call <code>DRSUnbind</code> in the code. The DRS handle is implicitly released when the script exits or the DC times out the session.</p>
+<h2 id="faq">FAQ<a hidden class="anchor" aria-hidden="true" href="#faq">#</a></h2>
+<ul>
+<li><em>Didn&rsquo;t we say that DCSync mimics DC-to-DC replication? But our attacking machine isn&rsquo;t a DC, right?</em></li>
+</ul>
+<p>Legitimate DCs only talk through Kerberos with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos">mutual authentication</a> (so both sides verify who they&rsquo;re talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy">encrypted traffic</a> (so the exchanged data stays safe in transit). We want to leveraege the legit DC-to-DC sync process, but we don&rsquo;t want the security protections that come with it.</p>
+<ul>
+<li><em>If the DCSync process only uses Kerberos, how can we use NTLM hashes (e.g. <code>secretsdump.py -hashes</code>)?</em></li>
+</ul>
+<p>When a <strong>non-DC host</strong> connects to a DC, the DC don&rsquo;t give a <a href="https://www.dota2.com/hero/puck">puck</a> about mutual authentication and encryption; it accepts both Kerberos and NTLM authentication. The DC will only check if our account has the replication permissions.</p>
+<ul>
+<li><em>What are the differences between the legit Replication process and DCSync?</em></li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th>Legit DC Replication</th>
+          <th>DCSync</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Requests all changes since last sync (incremental)</td>
+          <td>Requests specific objects with secrets (targeted)</td>
+      </tr>
+      <tr>
+          <td>Updates replication metadata to track sync state</td>
+          <td>Doesn&rsquo;t update any replication metadata</td>
+      </tr>
+      <tr>
+          <td>Happens continuously in the background between DCs</td>
+          <td>One-time operation initiated by us</td>
+      </tr>
+      <tr>
+          <td>Requests everything (objects, attributes, metadata, etc.)</td>
+          <td>Only requests credential-related attributes</td>
+      </tr>
+  </tbody>
+</table>
+<p>Another thing to point out is that when our tool of choice connects to a DC for replication, it constructs a very <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f">specific SPN</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>General format:
+</span></span><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/&lt;target DC GUID&gt;/&lt;domain FQDN&gt;
+</span></span><span style="display:flex;"><span>         └─ Fixed DRS interface GUID (same for every DC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Example:
+</span></span><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14/mollysec.local
+</span></span></code></pre></div><p>When we see Kerberos errors, like <code>KDC_ERR_S_PRINCIPAL_UNKNOWN</code>, it often means something is wrong with this SPN. As I&rsquo;m sure, we&rsquo;ve all experienced, this is why specifying a DC by its IP address can cause authentication problems; the SPN expects a proper FQDN. Falling back to NTLM authentication (using <code>-hashes</code>) often works around the problem.</p>
+<figure>
+    <img loading="lazy" src="/images/fqdn-kerberos.png"
+         alt="A meme highlighting the common issue of neglecting to use Fully Qualified Domain Names (FQDNs) when using Kerberos." width="500"/> 
+</figure>
+
+<h1 id="vss">VSS<a hidden class="anchor" aria-hidden="true" href="#vss">#</a></h1>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">mollysec</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

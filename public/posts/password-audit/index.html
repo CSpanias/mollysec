@@ -19,20 +19,28 @@
 <meta property="og:locale" content="en" />
 
 <meta property="og:type" content="article">
-<meta name="description" content="Welcome to My First Post
-This is the introduction to my first blog post.
-Section 1
-Here&rsquo;s some detailed content." />
+<meta name="description" content="Intro
+What is a Password Audit?
+
+What are the goals of the Password Audit
+
+How Password are Stored in Active Directory
+
+Few words about how passwords are stored …" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:creator" content="">
 <meta name="twitter:title" content="Password Audits" />
 <meta name="twitter:image" content="http://localhost:1313/"/>
 <meta property="og:url" content="http://localhost:1313/posts/password-audit/" />
 <meta property="og:title" content="Password Audits" />
-<meta property="og:description" content="Welcome to My First Post
-This is the introduction to my first blog post.
-Section 1
-Here&rsquo;s some detailed content." />
+<meta property="og:description" content="Intro
+What is a Password Audit?
+
+What are the goals of the Password Audit
+
+How Password are Stored in Active Directory
+
+Few words about how passwords are stored …" />
 <meta property="og:image" content="http://localhost:1313/" />
 
 <link rel="apple-touch-icon" sizes="180x180" href="http://localhost:1313/icons/apple-touch-icon.png">
@@ -121,7 +129,7 @@ Here&rsquo;s some detailed content." />
     <span class="post_date">
       Mar 13, 2026	  
     </span>
-    <span class="post_time"> · 1 min read</span>
+    <span class="post_time"> · 18 min read</span>
     <span class="page_only">&nbsp;·
   <div class="post_share">
     Share on:
@@ -157,10 +165,746 @@ Here&rsquo;s some detailed content." />
   </span>
   </div>
 
-    <div class="post_body"><h1 id="welcome-to-my-first-post">Welcome to My First Post</h1>
-<p>This is the introduction to my first blog post.</p>
-<h2 id="section-1">Section 1</h2>
-<p>Here&rsquo;s some detailed content.</p>
+    <div class="post_body"><h1 id="intro">Intro</h1>
+<h2 id="what-is-a-password-audit">What is a Password Audit?</h2>
+<ul>
+<li>What are the goals of the Password Audit</li>
+</ul>
+<h2 id="how-password-are-stored-in-active-directory">How Password are Stored in Active Directory</h2>
+<ul>
+<li>Few words about how passwords are stored in AD</li>
+</ul>
+<h2 id="what-we-usually-get-during-a-password-audit">What we usually get during a password audit</h2>
+<ul>
+<li>Few words how we get access to NTDS in pentesting, i.e., client gives us a DA account</li>
+</ul>
+<h2 id="what-is-ntdsdit">What is NTDS.dit?</h2>
+<p>The <a href="https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782"><code>NTDS.dit</code> (NT Directory Services Directory Information Tree)</a> is AD&rsquo;s core database, stored on every Domain Controller (DC). It contains the complete directory schema: all domain user accounts and password hashes (NTLM and, if available, LM hashes), group memberships and organizational units, Service Principal Names (SPNs) for additional attack surface analysis, historical password data depending on domain password policy settings, and trust relationships between domains and forests.</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="The relationship between the Domain Controller and NTDS.dit"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/ntds-syskey.jpg"
+      
+      
+        title="DC and NTDS.dit"
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">DC and NTDS.dit</figcaption></picture>
+</figure>
+</p>
+<p>For password auditing, <code>NTDS.dit</code> represents the complete credential dataset we need to analyze organizational password hygiene, identify weak authentication practices, and provide comprehensive security recommendations to our client.</p>
+<p><code>NTDS.dit</code> alone is encrypted and unusable. We must also extract the <code>SYSTEM</code> registry hive, which contains the Boot Key (<code>SYSKEY</code>) needed to decrypt the database encryption keys. Without this component, the extracted <code>NTDS.dit</code> file cannot be parsed or analyzed. Think of it as a two-key system: <code>NTDS.dit</code> is the locked vault, and the <code>SYSTEM</code> hive provides the master key.</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="The relationship between NTDS.dit and SYSKEY"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/ntds-syskey.jpg"
+      
+      
+        title="NTDS.dit and SYSKEY"
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">NTDS.dit and SYSKEY</figcaption></picture>
+</figure>
+</p>
+<h1 id="ntds-extraction">NTDS Extraction</h1>
+<p>With pre-authorized DA credentials, our extraction strategy emphasizes <strong>speed and efficiency</strong>. We aim to minimize engagement time while ensuring complete data capture. By selecting reliable methods that work across various AD configurations, we maintain data integrity for extracted hashes, ensuring they are ready for downstream cracking. Additionally, we prioritize tools that integrate smoothly with our existing password auditing pipeline.</p>
+<p>Since we typically operate from a Kali host, the focus will be on <strong>remote extraction</strong>.</p>
+<p>Extracting the files locally by jumping from Kali into a Window host via RDP or WinRM access can have both pros and cons. It enables direct file system access, allowing us to bypass network restrictions on SMB or RPC, and local execution can improve performance, especially for large files, while providing full control and insight into local logs and processes for further analysis. However, it can also add complexity to the workflow, potentially increasing engagement time, and resource limitations on the target host may hinder execution speed. Additionally, security policies can lead to misconfigurations, and the required tools must be present and properly configured on the target host.</p>
+<blockquote>
+<p>Should I also add a Windows section for Mimikatz?</p>
+</blockquote>
+<h2 id="method-1-impacket-secretsdump">Method 1: Impacket secretsdump</h2>
+<p>Impacket&rsquo;s <code>secretsdump</code> performs a DCSync operation, leveraging the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47">Directory Replication Service Remote Protocol (MS-DRSR)</a> to request credential material directly from the DC. This mimics legitimate DC replication traffic, extracting password hashes without touching the <code>NTDS.dit</code> file on disk.</p>
+<p>The basic command for NTLM hash extraction is:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>secretsdump.py <span style="color:#e6db74">&#39;DOMAIN/username:password@&lt;DC_IP&gt;&#39;</span> -just-dc-ntlm
+</span></span></code></pre></div><p>For more comprehensive extraction that captures additional credential material:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>secretsdump.py <span style="color:#e6db74">&#39;DOMAIN/username:password@&lt;DC_IP&gt;&#39;</span> -outputfile extracted_creds
+</span></span></code></pre></div><blockquote>
+<p>Analyse <code>secretsdump.py</code> script</p>
+</blockquote>
+<p><code>Secretsdump</code> has earned its position as an industry standard through extensive documentation, rigorous testing, and widespread trust within the offensive security community. The DCSync approach leverages AD&rsquo;s own replication mechanisms, requesting credentials as if we were another DC legitimate synchronization.</p>
+<p>When we invoke <code>secretsdump</code>, it establishes an authenticated connection to the target DC and initiates what appears to be a standard replication request using the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894"><code>DRSGetNCChanges</code></a> function. The DC, believing it&rsquo;s servicing a replication request from another DC, responds by transmitting the requested directory objects including password hashes. The data is returned in a linked-list structure that must be parsed and converted into a readable format. <code>Secretsdump</code>&rsquo;s internal modules handle this conversion, extracting NTLM hashes from the replication stream. The entire operation occurs over the network using RPC interfaces (DRSUAPI - UUID: e3514235-4b06-11d1-ab04-00c04fc2dcd2), with no direct file system access required on the target DC.</p>
+<p>This approach avoids disk I/O entirely on the target system. All credential data is transmitted over the network, making it <strong>one of the fastest extraction methods</strong> available. We need an account with <code>Replicating Directory Changes</code> and <code>Replicating Directory Changes All</code> permissions; typically DA credentials or accounts specifically delegated these rights.</p>
+<p>When using the <code>-outputfile</code> flag, <code>secretsdump</code> generates multiple files containing different credential types. The <code>.ntds</code> file contains NTLM hashes for all domain accounts, while <code>.ntds.cleartext</code> captures any cleartext passwords stored in AD attributes. The <code>.ntds.kerberos</code> file includes Kerberos keys (AES256, AES128, and DES), and additional files capture the local SAM database hashes from the DC (<code>.sam</code>) as well as LSA secrets, cached credentials, and machine account passwords (<code>.secrets</code>).</p>
+<p>The granular control offered through command-line flags like <code>-just-dc-ntlm</code>, <code>-just-dc-user</code>, and <code>-history</code> allows us to tailor extraction to specific engagement requirements. If we only need NTLM hashes for password cracking, we can skip the additional credential material to reduce extraction time.</p>
+<p><code>Secretsdump</code> uses a multi-protocol approach that <strong>requires both SMB and RPC access</strong>. The tool first establishes an SMB connection (TCP 445) for authentication and initial enumeration, then performs the actual DCSync operation using the DRSUAPI protocol over RPC (TCP 135 plus dynamic high ports in the range 49152-65535).This <strong>SMB-first behavior</strong> has practical implications for network-restricted environments.</p>
+<p>When using Kerberos authentication, <code>secretsdump</code> requires the <code>CIFS/domaincontroller</code> SPN to establish the initial SMB session. If we&rsquo;re operating in an environment where SMB is restricted or blocked but LDAP remains available, <code>secretsdump</code> may fail where pure LDAP-based methods succeed.This is the key distinction between <code>secretsdump</code> and <code>Mimikatz</code>&rsquo;s DCSync implementation.</p>
+<p><code>Mimikatz</code> uses LDAP for its initial authentication and connection establishment, then proceeds to DRSUAPI for the credential extraction. This LDAP-based approach allows <code>Mimikatz</code> to function in environments where SMB access is restricted, while <code>secretsdump</code>&rsquo;s SMB dependency can become a limiting factor. For most password audit engagements, this distinction is just a good-to-know detail as both SMB and LDAP are typically accessible to the DA. However, understanding the protocol requirements helps us troubleshoot connectivity issues and select alternative methods when network restrictions create obstacles.The output files benefit from organization if we&rsquo;re extracting from multiple DCs, though this is easily managed with a consistent directory structure.</p>
+<h2 id="method-12-netexec-deep-dive">Method 1.2+: NetExec Deep Dive</h2>
+<p>NetExec provides three distinct methods for extracting AD credentials from the <code>NTDS.dit</code> database on DCs. Each method employs different technical approaches with varying tradeoffs in terms of speed, reliability, and operational requirements.</p>
+<h3 id="method-1-drsuapi-default-method---remote-replication">Method 1: DRSUAPI (Default Method) - Remote Replication</h3>
+<blockquote>
+<p>Source code: <a href="https://github.com/Pennyw0rth/NetExec/blob/main/nxc/protocols/smb.py"><code>smb.py</code></a></p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>nxc smb 192.168.1.100 -u da-mollysec -p <span style="color:#e6db74">&#39;Passw0rd123!&#39;</span> --ntds
+</span></span></code></pre></div><p>NetExec&rsquo;s <code>--ntds</code> flag wraps Impacket&rsquo;s <code>secretsdump</code> DCSync functionality.The technical operation is identical to running <code>secretsdump.py -just-dc</code> directly: it performs DCSync via the MS-DRSR protocol, requires the same permissions (<code>Replicating Directory Changes</code> and <code>Replicating Directory Changes All</code>), and has the same network requirements (SMB + RPC access).</p>
+<p>NetExec imports the relevant modules from <code>secretsdump</code>:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script importing Impacket&amp;amp;rsquo;s modules"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-impacket-imports.png"
+      
+      
+        title="NetExec&#39;s smb.py imports."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">NetExec's smb.py imports.</figcaption></picture>
+</figure>
+</p>
+<p>The <code>ntds()</code> method starts by initializing variables with DCSync as the default:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script default NTDS dump method"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-default-method.png"
+      
+      
+        title="The default --ntds method."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">The default --ntds method.</figcaption></picture>
+</figure>
+</p>
+<p>The code only switches to VSS if explicitly requested via the <code>--ntds vss</code> argument:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script alternative &amp;amp;ndash;ntds vss NTDS dump method"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-default-method-1.png"
+      
+      
+        title="The alternative --ntds vss method."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">The alternative --ntds vss method.</figcaption></picture>
+</figure>
+</p>
+<p>NetExec then directly instantiates Impacket&rsquo;s <code>NTDSHashes</code> class with <code>useVSSMethod=False</code> (the default). This parameter instructs Impacket&rsquo;s <code>NTDSHashes</code> class to use the DRSUAPI/DCSync code path, which internally calls <code>drsuapi.hDRSGetNCChanges()</code>, the same RPC function that <code>secretsdump</code> uses for credential replication:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script instantiating the secretsdump&amp;amp;rsquo;s NTDSHashes class"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-default-method-2.png"
+      
+      
+        title="Secretsdump&#39;s NTDSHashes class instantiation."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Secretsdump's NTDSHashes class instantiation.</figcaption></picture>
+</figure>
+</p>
+<p>Finally, NetExec calls Impacket&rsquo;s <code>dump()</code> method to execute the DCSync operation:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script calling Impacket&amp;amp;rsquo;s dump() method"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-default-method-3.png"
+      
+      
+        title="NetExec&#39;s script calling Impacket&#39;s dump() method."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">NetExec's script calling Impacket's dump() method.</figcaption></picture>
+</figure>
+</p>
+<p>NetExec is not reimplementing DCSync; it&rsquo;s a direct wrapper around Impacket&rsquo;s existing implementation. The primary advantage of using NetExec for DCSync is workflow integration. If you&rsquo;re already using NetExec for domain enumeration, credential spraying, and lateral movement, maintaining the same tool reduces context switching and allows credential storage in NetExec&rsquo;s database for use in subsequent operations.</p>
+<h3 id="method-2-vss-volume-shadow-copy-service">Method 2: VSS (Volume Shadow Copy Service)</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>nxc smb 192.168.1.100 -u da-mollysec -p <span style="color:#e6db74">&#39;Passw0rd123!&#39;</span> --ntds vss
+</span></span></code></pre></div><p>The VSS method takes a fundamentally different approach by creating a <a href="https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service">Volume Shadow Copy</a> snapshot of the system volume on the target DC. This snapshot provides a point-in-time copy of the file system that can be accessed while the live <code>NTDS.dit</code> file remains locked by the AD database engine.</p>
+<p>When the <code>--ntds vss</code> flag is specified, NetExec initializes Impacket&rsquo;s <code>RemoteOperations</code> class, which handles the VSS snapshot creation:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script calling Impacket&amp;amp;rsquo;s enable_remoteops() method"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-vss-1.png"
+      
+      
+        title="NetExec&#39;s script calling Impacket&#39;s enable_remoteops() method."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">NetExec's script calling Impacket's enable_remoteops() method.</figcaption></picture>
+</figure>
+</p>
+<p>The code then checks for the <code>vss</code> argument and calls <code>saveNTDS()</code> to create the shadow copy and extract the database files:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="The vss flag sets the use_vss_metho to True"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-vss-2.png"
+      
+      
+        title="The vss flag sets the use_vss_metho to True."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">The vss flag sets the use_vss_metho to True.</figcaption></picture>
+</figure>
+</p>
+<p>NetExec copies the <code>NTDS.dit</code> file along with the <code>SYSTEM</code> and <code>SECURITY</code> registry hives from this shadow copy to a temporary location, typically within <code>C:\Windows\Temp</code>. The files are then transferred to the operator&rsquo;s machine via SMB using the <code>ADMIN$</code> administrative share. Finally, the extracted files are passed to Impacket&rsquo;s <code>NTDSHashes</code> class with <code>useVSSMethod=True</code> for local parsing:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s smb.py script instantiating the secretsdump&amp;amp;rsquo;s NTDSHashes class"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-vss-3.png"
+      
+      
+        title="Secretsdump&#39;s NTDSHashes class instantiation."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Secretsdump's NTDSHashes class instantiation.</figcaption></picture>
+</figure>
+</p>
+<p>While <strong>slower than DRSUAPI</strong> due to the file copy operations, this method can be useful when DRSUAPI access is restricted. It requires local administrator privileges on the DC but does not require specific AD replication permissions.</p>
+<h3 id="method-3-ntdsutil-module---living-off-the-land">Method 3: NTDSUTIL Module - Living Off the Land</h3>
+<blockquote>
+<p>Source code: <a href="https://github.com/Pennyw0rth/NetExec/blob/main/nxc/modules/ntdsutil.py">ntdsutil.py</a>, <a href="https://github.com/Pennyw0rth/NetExec/blob/main/nxc/data/ntds-dump-raw/ntds-dump-raw.ps1">ntds-dump-raw.ps1</a></p>
+</blockquote>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>nxc smb 192.168.1.100 -u da-mollysec -p <span style="color:#e6db74">&#39;Passw0rd123!&#39;</span> -M ntdsutil
+</span></span></code></pre></div><p>The <code>ntdsutil</code> module leverages Microsoft&rsquo;s legitimate <a href="https://learn.microsoft.com/en-us/troubleshoot/windows-server/active-directory/use-ntdsutil-manage-ad-files"><code>ntdsutil.exe</code></a> administrative tool. This method uses the <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2008-R2-and-2008/cc816722(v=ws.10)">Install From Media (IFM) functionality</a>, which was designed to allow administrators to create installation media for new DCs without requiring network-based replication.</p>
+<p>The module begins by executing <code>ntdsutil.exe</code> remotely via PowerShell to create a full IFM backup:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="NetExec&amp;amp;rsquo;s ntdsutil.py executing a full IFM backup"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-1.png"
+      
+      
+        title="Executing a full IFM backup via PowerShell."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Executing a full IFM backup via PowerShell.</figcaption></picture>
+</figure>
+</p>
+<p>The IFM export creates a structured directory containing the <code>NTDS.dit</code> database and registry hives. The module then retrieves three critical files over SMB: the <code>NTDS.dit</code> file containing the encrypted AD database, the <code>SYSTEM</code> hive containing the Boot Key needed for decryption, and the <code>SECURITY</code> hive containing cached credentials:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="Extracting the NTDS.dit, SYSTEM, and SECURITY files"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-2.png"
+      
+      
+        title="Extracting the NTDS.dit, SYSTEM, and SECURITY files."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Extracting the NTDS.dit, SYSTEM, and SECURITY files.</figcaption></picture>
+</figure>
+</p>
+<p>With the files transferred locally, the module extracts the Boot Key from the <code>SYSTEM</code> registry hive. The Boot Key is used to decrypt the Password Encryption Key (PEK) stored within <code>NTDS.dit</code>, which is then used to decrypt individual password hashes:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="Extracting the Boot Key from the SYSTEM registry hive"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-3.png"
+      
+      
+        title="Extracting the Boot Key from the SYSTEM registry hive."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Extracting the Boot Key from the SYSTEM registry hive.</figcaption></picture>
+</figure>
+</p>
+<p>The module then instantiates Impacket&rsquo;s <code>NTDSHashes</code> class to parse the ESE database format used by <code>NTDS.dit</code>. The <code>isRemote=False</code> parameter indicates local file parsing, while <code>useVSSMethod=True</code> treats it as a VSS-style dump:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="Instatiating Impacket&amp;amp;rsquo;s NTDSHashes class"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-4.png"
+      
+      
+        title="Instatiating Impacket&#39;s NTDSHashes class."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Instatiating Impacket's NTDSHashes class.</figcaption></picture>
+</figure>
+</p>
+<p>As credentials are extracted, a callback function processes each hash through filtering and validation steps. The <code>--enabled</code> flag filters output to display only accounts that are currently enabled in AD, reducing noise from disabled accounts of former employees or decommissioned services. In addition, computer accounts (identified by the trailing <code>$</code>) are excluded, and valid NTLM hashes are stored in NetExec&rsquo;s credential database:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="Filtering NTLM hashes"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-5.png"
+      
+      
+        title="Filtering NTLM hashes."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Filtering NTLM hashes.</figcaption></picture>
+</figure>
+</p>
+<p>After parsing completes, the module performs cleanup by removing the IFM export from the DC:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="Removing the IFM export from the DC"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-6.png"
+      
+      
+        title="Removing the IFM export from the DC."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Removing the IFM export from the DC.</figcaption></picture>
+</figure>
+</p>
+<p>If the <code>DIR_RESULT</code> option is specified, local copies are preserved and NetExec provides the command to re-parse files manually with <code>secretsdump.py</code>:</p>
+<p><figure>
+  <picture>
+
+    
+      
+        
+        
+        
+        
+        
+        
+    <img
+      loading="lazy"
+      decoding="async"
+      alt="Manual parsing of the extracted files with secretsdump"
+      
+        class="image_figure image_internal image_unprocessed"
+        src="http://localhost:1313/images/nxc-ntds-ntdsutil-7.png"
+      
+      
+        title="Manual parsing of the extracted files with secretsdump."
+      
+    />
+
+    <figcaption class="caption_figure caption_internal">Manual parsing of the extracted files with secretsdump.</figcaption></picture>
+</figure>
+</p>
+<p>This method requires local administrator privileges but does not require specific AD replication permissions. The operation generates significant disk activity and creates forensic artifacts including the IFM export directory and associated Windows event logs.</p>
+<h3 id="comparative-analysis-of-methods">Comparative Analysis of Methods</h3>
+<p>The three methods present distinct operational profiles that make each suitable for different penetration testing scenarios. <code>DRSUAPI</code> offers superior speed and requires no disk activity on the target DC, making it the default choice for most password audits. However, it requires specific AD permissions, more specifically <code>Replicating Directory Changes</code> and <code>Replicating Directory Changes All</code> rights.</p>
+<p>The <code>VSS</code> method provides an alternative approach, requiring only local administrator privileges without needing AD replication rights. It generates disk activity and temporary file artifacts but works in environments where <code>DRSUAPI</code> permissions haven&rsquo;t been delegated to the testing account. The file-based nature of this approach provides familiar workflow patterns for operators experienced with traditional file-based extraction.</p>
+<p>The <code>ntdsutil</code> module leverages Microsoft&rsquo;s legitimate administrative tooling to create the dump. This method also requires only local admin privileges and uses built-in Windows utilities. However, it is the slowest method due to the IFM creation process and generates the most extensive file system activity.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Feature</th>
+          <th>DRSUAPI</th>
+          <th>VSS</th>
+          <th>NTDSUTIL</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Speed</strong></td>
+          <td>Fast</td>
+          <td>Medium</td>
+          <td>Slow</td>
+      </tr>
+      <tr>
+          <td><strong>Disk Activity</strong></td>
+          <td>None</td>
+          <td>High</td>
+          <td>High</td>
+      </tr>
+      <tr>
+          <td><strong>File Artifacts</strong></td>
+          <td>None</td>
+          <td>Temporary</td>
+          <td>Temporary</td>
+      </tr>
+      <tr>
+          <td><strong>Required Permissions</strong></td>
+          <td>Replication rights</td>
+          <td>Local Admin</td>
+          <td>Local Admin</td>
+      </tr>
+      <tr>
+          <td><strong>Primary Use Case</strong></td>
+          <td>Default operations</td>
+          <td>No replication rights</td>
+          <td>Built-in tooling approach</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="method-3-ntdsutilexe-native-windows-approach">Method 3: ntdsutil.exe (Native Windows Approach)</h3>
+<p>Ntdsutil is Microsoft&rsquo;s native utility for NTDS database management, and its &ldquo;Install From Media&rdquo; (IFM) creation feature produces a complete, offline copy of NTDS.dit along with the necessary registry hives. This functionality was originally designed for promoting new domain controllers without network replication, but it serves our password audit purposes perfectly.</p>
+<p>The IFM creation command is remarkably simple:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ntdsutil <span style="color:#e6db74">&#34;activate instance ntds&#34;</span> <span style="color:#e6db74">&#34;ifm&#34;</span> <span style="color:#e6db74">&#34;create full C:\\temp\\ntds_dump&#34;</span> quit quit
+</span></span></code></pre></div><p>Alternatively, we can use VSS snapshots for more granular control:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ntdsutil snapshot <span style="color:#e6db74">&#34;activate instance ntds&#34;</span> create quit quit
+</span></span><span style="display:flex;"><span>ntdsutil snapshot <span style="color:#e6db74">&#34;mount {GUID}&#34;</span> quit quit
+</span></span><span style="display:flex;"><span>copy &lt;mounted_snapshot_path&gt;<span style="color:#ae81ff">\\</span>Windows<span style="color:#ae81ff">\\</span>NTDS<span style="color:#ae81ff">\\</span>ntds.dit C:<span style="color:#ae81ff">\\</span>temp<span style="color:#ae81ff">\\</span>
+</span></span><span style="display:flex;"><span>copy &lt;mounted_snapshot_path&gt;<span style="color:#ae81ff">\\</span>Windows<span style="color:#ae81ff">\\</span>System32<span style="color:#ae81ff">\\</span>config<span style="color:#ae81ff">\\</span>SYSTEM C:<span style="color:#ae81ff">\\</span>temp<span style="color:#ae81ff">\\</span>
+</span></span></code></pre></div><p>The native Windows approach offers significant advantages when we already have interactive access to a domain controller through RDP or WinRM. As a built-in Windows utility, ntdsutil requires no third-party software installation. The direct filesystem access eliminates network overhead, making this typically the fastest extraction method available. The tool produces clean, ready-to-transfer files in a single directory and leverages Windows&rsquo; native shadow copy infrastructure for reliable VSS handling.</p>
+<p>Ntdsutil does require execution directly on the domain controller, which means we need RDP, WinRM, or PSExec access. We also need to ensure sufficient disk space for the IFM set, which typically consumes several gigabytes depending on the Active Directory database size.</p>
+<p>This method excels when we&rsquo;re operating from a Windows jump host within the client environment rather than our Kali attack platform. If we&rsquo;ve already established an RDP session to perform other domain controller analysis, ntdsutil becomes the most efficient option available.</p>
+<p>After extraction, we need to transfer the large files off the DC back to our analysis environment. We should also clean up the IFM directory to avoid leaving unnecessary artifacts, though from a pure password audit perspective this is more about professional hygiene than operational security.</p>
+<h3 id="method-4-dcsync-via-mimikatz">Method 4: DCSync via Mimikatz</h3>
+<p>Mimikatz&rsquo;s DCSync module performs the same Directory Replication Service operations as secretsdump, but with a pure LDAP-based approach. Unlike Impacket&rsquo;s SMB-first methodology, Mimikatz doesn&rsquo;t require CIFS SPNs or SMB access, which can be advantageous in certain network configurations.</p>
+<p>The command for complete credential extraction is:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lsadump::dcsync /domain:targetdomain.com /all /csv
+</span></span></code></pre></div><p>For targeting specific high-value accounts:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lsadump::dcsync /domain:targetdomain.com /user:Administrator
+</span></span></code></pre></div><p>The LDAP-only operation works well in environments where SMB faces additional restrictions. Mimikatz displays hashes immediately in real-time output without creating intermediate files, which can be useful for quick verification. The selective extraction capability allows us to target specific accounts when we need rapid confirmation of particular credentials before committing to a full NTDS extraction.</p>
+<p>However, Mimikatz requires execution on a Windows host, typically accessed via RDP or WinRM. The output requires parsing if we need standardized file formats compatible with our cracking tools, as the default console output isn&rsquo;t optimized for direct ingestion into Hashcat or John the Ripper.</p>
+<p>DCSync via Mimikatz is particularly useful when we&rsquo;re already operating from a Windows host and need quick verification of specific account credentials. For comprehensive password auditing requiring all domain hashes, secretsdump or NetExec typically provide better workflow integration.</p>
+<h2 id="output-handling-and-organization">Output Handling and Organization</h2>
+<p>Regardless of extraction method, we need to organize output files for efficient downstream processing. A standardized directory structure prevents confusion during multi-DC extractions and long-duration engagements.</p>
+<p>We recommend organizing files hierarchically with separate directories for extraction, cracking, and analysis phases:</p>
+<pre tabindex="0"><code>password_audit/
+├── extraction/
+│   ├── dc01_ntds_20240315/
+│   │   ├── ntds.dit
+│   │   ├── SYSTEM
+│   │   └── extraction_metadata.txt
+│   ├── dc02_ntds_20240315/
+│   └── combined_hashes.txt
+├── cracking/
+│   ├── hashcat_sessions/
+│   └── cracked_passwords.txt
+└── analysis/
+    └── password_audit_report.xlsx
+</code></pre><p>File naming conventions should include the DC hostname to track the source when extracting from multiple DCs, a date and timestamp for tracking multiple extractions during long engagements, and optionally the extraction method for troubleshooting if we&rsquo;re comparing different approaches.</p>
+<h3 id="preparing-hashes-for-cracking">Preparing Hashes for Cracking</h3>
+<blockquote>
+<p>Compare how each tool output the hashes!</p>
+</blockquote>
+<p>Most extraction methods output hashes in formats compatible with Hashcat or John the Ripper. Secretsdump&rsquo;s <code>.ntds</code> file uses this format:</p>
+<pre tabindex="0"><code>DOMAIN\\username:RID:LM_hash:NTLM_hash:::
+</code></pre><p>For Hashcat, we typically extract just the NTLM hashes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat extracted_creds.ntds | cut -d: -f4 &gt; ntlm_hashes.txt
+</span></span></code></pre></div><p>Or preserve username associations for analysis:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat extracted_creds.ntds | cut -d: -f1,4 --output-delimiter<span style="color:#f92672">=</span>: &gt; user_ntlm_pairs.txt
+</span></span></code></pre></div><p>The username-hash pairing is particularly valuable during the analysis phase when we need to identify which accounts use weak passwords and correlate cracking success with privilege levels or organizational roles.</p>
+<h2 id="benchmarking-and-performance-testing">Benchmarking and Performance Testing</h2>
+<p>To determine the optimal extraction method for your specific environment, we recommend systematic benchmarking across several dimensions. Speed comparison testing should measure time to first hash (how quickly does extraction begin), total extraction time from initiation to usable output, and network transfer time for remote methods to understand the complete operational timeline.</p>
+<p>Reliability testing involves running each method multiple times across different domain controllers to assess success rate consistency, error handling quality, and environmental dependencies such as specific network configurations or SPNs. We want to understand not just whether a method works, but how it fails when problems occur and whether error messages provide actionable troubleshooting information.</p>
+<p>Output consistency verification ensures that all methods extract complete hash sets by comparing hash counts across methods, produce consistent formatting that&rsquo;s directly compatible with cracking tools, and capture additional credential material like cleartext passwords and Kerberos keys when relevant.</p>
+<p>A sample benchmark template for documenting results:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>Extraction Time</th>
+          <th>File Size</th>
+          <th>Hash Count</th>
+          <th>Success Rate</th>
+          <th>Notes</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>NetExec LDAP+VSS</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>Test from Kali</td>
+      </tr>
+      <tr>
+          <td>secretsdump</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>Test from Kali</td>
+      </tr>
+      <tr>
+          <td>ntdsutil</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>Test from DC RDP</td>
+      </tr>
+      <tr>
+          <td>Mimikatz DCSync</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>Test from Windows host</td>
+      </tr>
+  </tbody>
+</table>
+<p>Populate this table with results from your specific client environment to build institutional knowledge about which methods perform best under your typical engagement conditions.</p>
+<h2 id="common-issues-and-troubleshooting">Common Issues and Troubleshooting</h2>
+<h3 id="access-denied-despite-da-credentials">&ldquo;Access Denied&rdquo; Despite DA Credentials</h3>
+<p>When we encounter access denied errors despite possessing valid Domain Admin credentials, the issue typically stems from credential formatting problems. Active Directory tools have varying requirements for credential format—some expect <code>domain\\username</code> while others require <code>username@domain.com</code>. We should verify credentials first with a simple authentication test like <code>netexec smb &lt;DC_IP&gt; -u username -p password</code> before attempting full NTDS extraction.</p>
+<p>Occasionally, the account may have the &ldquo;Account is sensitive and cannot be delegated&rdquo; flag set, which can interfere with certain remote authentication mechanisms. Checking account properties in Active Directory Users and Computers resolves this quickly. If remote access continues failing, attempting extraction from a domain-joined Windows host instead of Kali sometimes bypasses authentication delegation issues.</p>
+<h3 id="incomplete-hash-extraction">Incomplete Hash Extraction</h3>
+<p>Incomplete extractions usually result from process interruption mid-execution, insufficient disk space on the target or local system, or VSS snapshots being deleted prematurely by automated cleanup processes. Monitoring disk space before extraction prevents the most common failure mode—use <code>df -h</code> on Linux or <code>Get-PSDrive</code> on Windows to verify available space.</p>
+<p>Comparing hash counts against expected user counts provides quick validation. We can verify the approximate user count with <code>net user /domain</code> and compare against the number of hashes extracted. Significant discrepancies warrant re-running the extraction and comparing outputs for consistency.</p>
+<h3 id="smbrpc-connectivity-issues">SMB/RPC Connectivity Issues</h3>
+<p>Network connectivity problems manifest as timeout errors or connection refused messages when attempting remote extraction. Firewall rules blocking required ports, SMB signing or encryption requirements, and network segmentation preventing direct DC access are the most common culprits.</p>
+<p>When SMB or RPC connectivity fails, switching to LDAP-based methods often provides a workaround. NetExec LDAP or Mimikatz DCSync operate without SMB dependencies, making them more resilient in restricted network environments. We can verify port accessibility with <code>nmap -p 135,389,445,636 &lt;DC_IP&gt;</code> to quickly identify which protocols are available.</p>
+<p>In heavily segmented environments, pivoting through a domain-joined Windows host sometimes provides the necessary network access when direct connections from Kali fail. This Windows host acts as a bridge, executing extraction commands with network proximity to the domain controller.</p>
+<h3 id="vss-snapshot-failures">VSS Snapshot Failures</h3>
+<p>Volume Shadow Copy failures typically occur due to insufficient disk space for shadow copy creation, the VSS service not running on the target system, or previous snapshots consuming available VSS storage without proper cleanup.</p>
+<p>Checking VSS service status with <code>vssadmin list shadows</code> reveals existing snapshots and their storage consumption. Deleting old snapshots using <code>vssadmin delete shadows /all</code> frees up VSS storage quota. We should verify disk space on the system volume before attempting VSS-based extraction, as shadow copies require substantial temporary storage.</p>
+<h2 id="choosing-the-best-method-for-your-engagement">Choosing the Best Method for Your Engagement</h2>
+<p>The optimal NTDS extraction method depends on your specific engagement parameters. For maximum speed when time is constrained, ntdsutil.exe executed locally on a domain controller via RDP provides the fastest extraction with minimal overhead. For maximum reliability across diverse network environments, <a href="http://secretsdump.py/">secretsdump.py</a> offers proven consistency and comprehensive credential extraction. For workflow integration when already using NetExec for enumeration and lateral movement, NetExec LDAP + VSS maintains toolchain consistency and reduces cognitive load from switching between different utilities.</p>
+<p>In practice, experienced penetration testers often maintain proficiency with multiple methods. Network conditions change, client environments vary, and having alternative extraction techniques prevents a single point of failure in our password audit methodology. The benchmarking data we collect across engagements builds institutional knowledge about which methods perform best under specific conditions, allowing us to make informed tactical decisions rapidly.</p>
+<h2 id="next-steps">Next Steps</h2>
+<p>With NTDS.dit and the SYSTEM hive successfully extracted, we&rsquo;re ready to proceed to the password cracking phase. The next section of this guide will cover hash extraction from the NTDS database, optimal Hashcat configuration for password auditing, and analysis techniques for identifying systemic password weaknesses in the organization.</p>
+<h1 id="organising-secrets">Organising secrets</h1>
+<ul>
+<li>How the current tool (<code>secretsorganise</code>) works exactly?</li>
+<li>Are there other open-source tools that are better?</li>
+<li>If not, can we make it better?</li>
+<li>We crack the <code>[ALL]-[NTLM].txt</code> file that outputs</li>
+</ul>
+<h1 id="cracking-ntlms">Cracking NTLMs</h1>
+<ul>
+<li>using multiple runs of hashcat</li>
+<li>rockyou → rockyou + rules → weakpass_4a → weakpass_4a + rules</li>
+<li>Is this the best way for our restricted time?</li>
+<li>Can we do a better job since we can leave it running in out-of-work hours for at least 3-4 days?</li>
+<li>We don’t utilise sessions, could that help?</li>
+<li>Is it this how actual attackers would try to crack?</li>
+</ul>
+<h1 id="cracked-ntlms-analysis">Cracked NTLMs Analysis</h1>
+<ul>
+<li>a custom version of <code>pwdlyzer</code> (6 years old)</li>
+<li>a bit finicky, but outputs what we need for the custom reporting platform</li>
+<li>that is XLM files mapped to the platforms findings and stock text for each section of the finding</li>
+<li>Is there any other modern tool we can use for that?</li>
+<li>I currently used <code>-D 2 -O</code> to use both GPUs and optimised kernels. Is this the best optimisation?</li>
+</ul>
+<h1 id="reporting">Reporting</h1>
+<ul>
+<li>We report common stats, such as DA passwords, pass reuse, common words, etc.</li>
+<li>Add % cracked per hashcat run to demonstrate pass strength?</li>
+<li>Benchmarks against standards?
+<ul>
+<li>Verizon&rsquo;s Data Breach Investigations Report</li>
+<li>SocinumSecure&rsquo;s credential review reports</li>
+<li>Meta-analyses</li>
+</ul>
+</li>
+<li>can KnowBe4&rsquo;s WPT tool be of any use?</li>
+<li>is worth “comparing” to popular frameworks such as NIST, NCSC, etc?</li>
+</ul>
 
     </div><div class="post_comments">
   

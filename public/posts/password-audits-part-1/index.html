@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Password Audits Part 1: NTDS Extraction | mollysec</title>
+<meta name="keywords" content="">
+<meta name="description" content="Article focusing the process of NTDS.dit file, Active Directory&#39;s database, during the password audit process.">
+<meta name="author" content="mollysec">
+<link rel="canonical" href="http://localhost:1313/posts/password-audits-part-1/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.d15f42ea70aee180ff9803eba07257f2411ca73a1d416903e72edd303cde3d46.css" integrity="sha256-0V9C6nCu4YD/mAProHJX8kEcpzodQWkD5y7dMDzePUY=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/password-audits-part-1/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="mollysec (Alt + H)">mollysec</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/contact" title="Contact">
+                    <span>Contact</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Password Audits Part 1: NTDS Extraction
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h1>
+    <div class="post-description">
+      Article focusing the process of NTDS.dit file, Active Directory&#39;s database, during the password audit process.
+    </div>
+    <div class="post-meta">
+
+<span title='2026-03-13 00:00:00 +0000 UTC'>March 13, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="what-about-password-audits">What about Password &ldquo;Audits&rdquo;?<a hidden class="anchor" aria-hidden="true" href="#what-about-password-audits">#</a></h1>
+<blockquote>
+<p><strong>Note</strong>: This article focuses on the, one-level deep, technical mechanics of NTDS extraction during pentests. OPSEC considerations are out of scope. Sorry!</p>
+</blockquote>
+<p>I recently went from testing (close-to-zero-functionality) APIs to testing, almost, everything. I am talking about web apps, GraphQL APIs, cloud configs, build reviews, external and internal assessments, the whole shebang.</p>
+<p>It sounds like a lot, isn&rsquo;t? I might need to ask for a raise&hellip;</p>
+<figure>
+    <img loading="lazy" src="/images/broke-make-it-rain.gif"
+         alt="A meme showing a man that make a dollar note to dissappear." width="330"/> 
+</figure>
+
+<p>One, rather small, part of internal testing is conducting a <strong>Password Audit</strong>, which can be summed up as follows:</p>
+<hr>
+<p>Extract NTDS → Clean/Organise NTDS → Recover/Crack NTDS → Generate stats.</p>
+<hr>
+<p>Sounds simple, doesn&rsquo;t it?</p>
+<p>Well, for normal people, it is actually pretty straightforward and even boring after a while! But I am not one of those people. One of my greatest joys in life is to overcomplicate the simplest things.</p>
+<p>So, buckle up.</p>
+<h1 id="tldr-on-ntds">TL;DR on NTDS<a hidden class="anchor" aria-hidden="true" href="#tldr-on-ntds">#</a></h1>
+<p>As you probably know already, passwords are stored server side in databases in a strange-looking format called a hash. In an AD environment, this database is called <a href="https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782">NT Directory Services Directory Information Tree</a> (NTDS) and is located within the Key Distribution Centre (KDC).</p>
+<figure>
+    <img loading="lazy" src="/images/hash-process.png"
+         alt="A user types his password, the password transforms into a hash, which is then compared with the one stored in the database." width="900"/> 
+</figure>
+
+<p>Some relevant facts about NTDS:</p>
+<ul>
+<li>Every domain controller (DC) contains a copy of the NTDS.</li>
+<li>All DCs are kept in sync with each other via a process called <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations">Replication</a>.</li>
+<li>NTDS is encrypted, therefore, unusable by itself (shoot!).</li>
+<li>The SYSTEM registry hive has the encryption key, aka SYSKEY (phew!).</li>
+</ul>
+<p>The bottom line is that we need both the NTDS and the SYSKEY in order to decrypt the former and get the hashes. Remember that we are talking about testing and not <em>hacking</em>, so we get handed both on a silver plate. The <em>testee</em> gives us a Domain Admin (DA) account which has permissions (more on that later) to obtain both with a single command. Life is good!</p>
+<p>Imagine now that someone, surely deranged, thought to write a &ldquo;<em>deep-dive</em>&rdquo; article for that single command&hellip;</p>
+<figure>
+    <img loading="lazy" src="/images/spongebob-delulu.gif"
+         alt="A meme of spongebob saying &#39;Delulu&#39;." width="400"/> 
+</figure>
+
+<h1 id="ntds-extraction">NTDS Extraction<a hidden class="anchor" aria-hidden="true" href="#ntds-extraction">#</a></h1>
+<p>Since we don&rsquo;t need to <em>hack</em> our way into DA, our goal is to get the NTDS <strong>as complete and as fast as possible</strong>. We can do that both remotely (DRSUAPI or VSS) or locally (NTDSUTIL or VSSADMIN).</p>
+<p>If those acronyms don&rsquo;t ring a bell, worry not; it is almost certain that you have used them multiple times already!</p>
+<h1 id="drsuapi">DRSUAPI<a hidden class="anchor" aria-hidden="true" href="#drsuapi">#</a></h1>
+<h2 id="theory">Theory<a hidden class="anchor" aria-hidden="true" href="#theory">#</a></h2>
+<p>This is the <strong>DCSync</strong> approach, the default method of most tools. It&rsquo;s the fastest one as it avoids disk I/O entirely; all data is transmitted over the network via RPC (TCP 135) and dynamic high ports (TCP 49152-65535). If your are using this and it&rsquo;s failing for no apparent reason, check if those RCP ports are blocked!</p>
+<p>The goal of DC-Sync is in the name: <strong>impersonate a DC and ask another DC to sync with us</strong>, i.e., give us its data.</p>
+<figure>
+    <img loading="lazy" src="/images/look-at-me-i-am-the-dc-now.png"
+         alt="A meme saying: &#39;Look at me, I am the DC now&#39;." width="500"/> 
+</figure>
+
+<p>This process is known as <strong>DC-to-DC replication</strong> and is a legit process that happens on regular intervals via the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47">Directory Replication Service Remote Protocol (MS-DRSR)</a>. Simply put, the DRS protocol is what DCs use to communicate and sync their databases with each other.</p>
+<p>DRS has two RPC interfaces, but we mostly care about the one: <strong>DRSUAPI</strong>. This is because DRSUAPI includes the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894"><code>IDL_DRSGetNCChanges</code></a> function which is a part of the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410"><code>IDL_DRS</code></a> methods. We will dig more into that later.</p>
+<p>Obviously, not everyone can ask a DC for data, that would be <a href="https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit">glaikit</a>. But DAs have the permissions to do it, more specifically, the <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes">Replicating Directory Changes</a> and <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all">Replicating Directory Changes All</a>. We will see why we need both of them soon.</p>
+<blockquote>
+<p><a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-in-filtered-set">Replicating Directory Changes In Filtered Set</a> might also be needed when dealing with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/rodc-and-active-directory-schema">RODC</a>, but that had never happened to me during my extensive three months-career doing internal testing.</p>
+</blockquote>
+<p>When we run Impacket&rsquo;s <code>secretsdump.py</code> (or NetExec&rsquo;s <code>--ntds</code>), we are triggering a sequence of DRS calls:</p>
+<ol>
+<li>
+<p><strong>IDL_DRSBind</strong> (The Handshake)</p>
+<p>Before we can request anything, we first need to establish a connection with the DC. This method creates a <code>DRS_HANDLE</code> (kind of a session token) that proves we&rsquo;ve successfully authenticated and are authorised to make replication requests. This handle remains valid for all subsequent operations until we explicitly call <code>IDL_DRSUnbind</code> or the server invalidates it (e.g., due to timeout or errors).</p>
+<p>When a tool fails with a <code>bind failed</code> error, something has gone wrong here.</p>
+</li>
+<li>
+<p><strong>IDL_DRSGetNCChanges</strong> (Replicating Data)</p>
+<p>This is the function that actually replicates directory data from the DC to our host. To call this function we need the <strong>Replicating Directory Changes</strong> permission. However, just calling <code>IDL_DRSGetNCChanges</code> only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials.</p>
+<p>To get the actual credentials, we need to include the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813"><code>EXOP_REPL_SECRETS</code></a> flag. In order to do that, we need the <strong>Replicating Directory Changes All</strong> permission.</p>
+<figure>
+        <img loading="lazy" src="/images/makes-sense-fallon.gif"
+             alt="A meme showing Jimmy Fallon undestanding something." width="300"/> 
+    </figure>
+
+</li>
+<li>
+<p><strong>IDL_DRSUnbind</strong> (Cleanup)</p>
+<p>Once we&rsquo;ve replicated what we need, well-behaved tools call <code>IDL_DRSUnbind</code> to explicitly close the connection and release the <code>DRS_HANDLE</code>; at least, that&rsquo;s what I expected before diving into the code.</p>
+</li>
+</ol>
+<p>Some questions might have surfaced through your mind by now:</p>
+<ul>
+<li>
+<p><em>Didn&rsquo;t we say that DCSync mimics DC-to-DC replication? But our attacking machine isn&rsquo;t a DC, right?</em></p>
+<p>Here&rsquo;s the thing: legitimate DCs only talk through Kerberos with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos">mutual authentication</a> (so both sides verify who they&rsquo;re
+talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy">encrypted traffic</a> (so the exchanged data stays safe in transit). We want to use the legitimate DC-to-DC sync process, but we don&rsquo;t want the security protections that come with it.</p>
+</li>
+<li>
+<p><em>But if the DCSync process only uses Kerberos, how can we use NTLM hashes (e.g. <code>secretsdump.py -hashes</code>)?</em></p>
+<p>Well, here&rsquo;s the interesting part: when a <strong>non-DC host</strong> connects to a DC, the DC couldn&rsquo;t give a <a href="https://www.dota2.com/hero/puck">puck</a> about mutual authentication and encryption; it accepts both Kerberos and NTLM authentication. The DC will only check if our account has the replication permissions.</p>
+</li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th>Legit DC Replication</th>
+          <th>DCSync</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Requests all changes since last sync (incremental)</td>
+          <td>Requests specific objects with secrets (targeted)</td>
+      </tr>
+      <tr>
+          <td>Updates replication metadata to track sync state</td>
+          <td>Doesn&rsquo;t update any replication metadata</td>
+      </tr>
+      <tr>
+          <td>Happens continuously in the background between DCs</td>
+          <td>One-time operation initiated by us</td>
+      </tr>
+      <tr>
+          <td>Requests everything (objects, attributes, metadata, etc.)</td>
+          <td>Only requests credential-related attributes</td>
+      </tr>
+  </tbody>
+</table>
+<p>Another thing to point out is that when our tool of choice connects to a DC for replication, it constructs a very <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f">specific SPN</a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>General format:
+</span></span><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/&lt;target DC GUID&gt;/&lt;domain FQDN&gt;
+</span></span><span style="display:flex;"><span>         └─ Fixed DRS interface GUID (same for every DC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>Example:
+</span></span><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14/mollysec.local
+</span></span></code></pre></div><p>When we see Kerberos errors, like <code>KDC_ERR_S_PRINCIPAL_UNKNOWN</code>, it often means something is wrong with this SPN. As I&rsquo;m sure, we&rsquo;ve all experienced, this is why specifying a DC by its IP address can cause authentication problems; the SPN expects a proper FQDN. Falling back to NTLM authentication (using <code>-hashes</code>) often works around the problem.</p>
+<figure>
+    <img loading="lazy" src="/images/fqdn-kerberos.png"
+         alt="A meme highlighting the common issue of neglecting to use Fully Qualified Domain Names (FQDNs) when using Kerberos." width="500"/> 
+</figure>
+
+<p>Enough theory for now; lets see <code>secretsdump.py</code>&rsquo;s DCSync implementation.</p>
+<h2 id="secretsdump">Secretsdump<a hidden class="anchor" aria-hidden="true" href="#secretsdump">#</a></h2>
+<blockquote>
+<p>Why don&rsquo;t we extract the LA&rsquo;s from the DCs???</p>
+</blockquote>
+<p>Impacket&rsquo;s <a href="https://github.com/fortra/impacket/blob/master/impacket/examples/secretsdump.py">secretsdump.py</a> performs a DCSync operation by default:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>secretsdump.py <span style="color:#e6db74">&#39;MOLLYSEC/molly:&#39;</span>Password123!<span style="color:#e6db74">&#39;@192.168.1.5&#39;</span>
+</span></span></code></pre></div><p>Let&rsquo;s see how secretsdump implements the three-step DRSUAPI process that we are now experts on:</p>
+<ol>
+<li>
+<p><strong>IDL_DRSBind</strong> (The Handshake)</p>
+<p>Secretsdump establishes a DRS session with the DC via the <code>DRSBind</code> method by negotiating capabilities:</p>
+<figure>
+        <img loading="lazy" src="/images/impacket-drsuapi-1.png"
+             alt="The relevant code snippet from secretsdump." width="800"/> 
+    </figure>
+
+<p>The key flags here are:</p>
+<ul>
+<li><code>NTDSAPI_CLIENT_GUID</code>: Identifies our host as a replication client to the DC.</li>
+<li><code>DRS_EXT_GETCHGREQ_V6/V8</code>: Protocol version negotiation, supports both older (2003) and newer (2008+) DCs.</li>
+<li><code>DRS_EXT_STRONG_ENCRYPTION</code>: Ensures AES-encrypted communication.</li>
+</ul>
+</li>
+<li>
+<p><strong>IDL_DRSGetNCChanges</strong> (Replicating Data)</p>
+<p>After the session is established, Secretsdump calls <code>DRSGetNCChanges</code> (including the <code>EXOP_REPL_OBJ</code> flag) for each user:</p>
+<figure>
+        <img loading="lazy" src="/images/impacket-drsuapi-2.png"
+             alt="The relevant code snippet from secretsdump." width="800"/> 
+    </figure>
+
+<p>An interesting thing to note is that the <code>uuidDsaObjDest</code>and <code>uuidInvocIdSrc</code> variables are the GUIDs that identify the destination and source DCs in a replication operation. Since we&rsquo;re not a real DC, secretsdump sets both to the target DC&rsquo;s GUID to make the request appear legitimate.</p>
+</li>
+<li>
+<p><strong>IDL_DRSUnbind</strong> (Cleanup)</p>
+<p>Interestingly, secretsdump doesn&rsquo;t explicitly call <code>DRSUnbind</code> in the code. The DRS handle is implicitly released when the script exits or the DC times out the session.</p>
+</li>
+</ol>
+<p>Once secretsdump receives the encrypted attributes from the DC, it:</p>
+<ol>
+<li>Decrypts them using the session key from <code>DRSBind</code>.</li>
+<li>Formats the output (e.g., <code>username:rid:lmhash:nthash:::</code>).</li>
+<li>Writes to stdout or the specified output files.</li>
+</ol>
+<h1 id="vss">VSS<a hidden class="anchor" aria-hidden="true" href="#vss">#</a></h1>
+<h2 id="theory-1">Theory<a hidden class="anchor" aria-hidden="true" href="#theory-1">#</a></h2>
+<p>The <a href="https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service">Volume Shadow Copy Service</a> (VSS) method is a fundamentally different approach from DRSUAPI. The goal here is to:</p>
+<ol>
+<li>Access the DC locally</li>
+<li>Create a snapshot (a point-in-time copy) of its disk</li>
+<li>Copy NTDS and SYSTEM from that snapshot</li>
+</ol>
+<p>The issue here is that AD constantly uses NTDS and, as a result, it is always locked; VSS solves that problem.</p>
+<p>Unlike DRSUAPI, which we need replication permissions (DA-level access), VSS requires just Local Administrator (or even Backup Operator) access to the DC. However, since this process involves disk I/O, it is slower than DRSUAPI. In addition, VSS makes a snapshot of the entire volume; it is not a targeted credential-grabbing like DRSUAPI.</p>
+<p>So why we would ever want to use the slower VSS method instead of DRSUAPI?, I hear you ask.</p>
+<p>The obvious answer is when we are not a DA but just a LA on a DC. Also, another use case could be that the required RPC ports for DRSUAPI are blocked, but SMB access is available.</p>
+<p>The VSS process looks like this:</p>
+<ol>
+<li>Create a shadow copy of the volumne contaings NTDS (e.g. a snapshot of the <code>C:\</code> drive).</li>
+<li>Access the snapshot via its kernel device path (something like <code>\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\</code>).</li>
+<li>Copy NTDS (<code>Windows\NTDS\</code>) and SYSTEM (<code>Windows\System32\config\</code>) from the snapshot  to a target location (e.g. <code>\Temp</code>).</li>
+<li>Delete the snapshot.</li>
+</ol>
+<p>Like DRSUAPI, where we <em>kind of</em> mimicked the DC-to-DC replication process, here we <em>kind of</em> mimicking the VSS process.</p>
+<p>Because it is a native Windows process, it does automatically means that it&rsquo;s <em>stealthy</em>: the pattern of creating a shadow copy, immediately accessing NTDS, and then deleting the snapshot is a pretty clear indicator of credential dumping.</p>
+<h2 id="secretsdump-1">Secretsdump<a hidden class="anchor" aria-hidden="true" href="#secretsdump-1">#</a></h2>
+<p>When we use secretsdump with the <code>-use-vss</code> flag, the execution path changes from the default DRSUAPI to VSS:</p>
+<figure>
+    <img loading="lazy" src="/images/impacket-use-vss.png"
+         alt="Secretsdump help menu explaining the -use-vss flag." width="650"/> 
+</figure>
+
+<ol>
+<li>
+<p><strong>Remote Service Creation</strong></p>
+<p>Secretsdump connects to the DC&rsquo;s <strong>Service Control Manager (SCM)</strong> (the Windows component that manages services) via RPC over SMB and starts the <code>RemoteRegistry</code> service. This service allows remote access to the registry, which is needed to extract the SYSTEM hive (containing the SYSKEY used to decrypt NTDS later):</p>
+<figure>
+        <img loading="lazy" src="/images/impacket-vss-1.png"
+             alt="The relevant code snippet from secretsdump." width="600"/> 
+    </figure>
+
+</li>
+<li>
+<p><strong>Shadow Copy Creation</strong></p>
+<p>Then, it executes <code>vssadmin</code> on the DC to create the volume snapshot. The command is executed remotely using one of several methods (<code>-exec-method</code> flag): creating a temporary service via SCM (default), using WMI, or other remote execution techniques:</p>
+<figure>
+        <img loading="lazy" src="/images/impacket-vss-2.png"
+             alt="The relevant code snippet from secretsdump." width="850"/> 
+    </figure>
+
+</li>
+<li>
+<p><strong>File Extraction via SMB</strong></p>
+<p>Once the shadow copy exists, secretsdump accesses it via the <code>ADMIN$</code> share and uses SMB to copy both NTDS and SYSTEM from the snapshot to the target machine:</p>
+<figure>
+        <img loading="lazy" src="/images/impacket-vss-3.png"
+             alt="The relevant code snippet from secretsdump." width="600"/> 
+    </figure>
+
+</li>
+<li>
+<p><strong>Shadow Copy Deletion</strong></p>
+<p>After copying the files, secretsdump deletes the shadow copy:</p>
+<figure>
+        <img loading="lazy" src="/images/impacket-vss-4.png"
+             alt="The relevant code snippet from secretsdump." width="400"/> 
+    </figure>
+
+</li>
+</ol>
+<p>Here&rsquo;s a handy recap:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Aspect</th>
+          <th>DRSUAPI</th>
+          <th>VSS</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Network protocol</strong></td>
+          <td>RPC (DRSUAPI calls)</td>
+          <td>RPC (SCM) + SMB (file transfer)</td>
+      </tr>
+      <tr>
+          <td><strong>Data format</strong></td>
+          <td>Encrypted attributes in DRS responses</td>
+          <td>Raw ESE database file</td>
+      </tr>
+      <tr>
+          <td><strong>Decryption</strong></td>
+          <td>Session key from DRSBind</td>
+          <td>SYSKEY from SYSTEM hive</td>
+      </tr>
+      <tr>
+          <td><strong>Extraction granularity</strong></td>
+          <td>Per-user (can target specific accounts)</td>
+          <td>All-or-nothing (entire database)</td>
+      </tr>
+      <tr>
+          <td><strong>Speed</strong></td>
+          <td>Fast (streaming data)</td>
+          <td>Slow (snapshot + file copy)</td>
+      </tr>
+      <tr>
+          <td><strong>Disk footprint on DC</strong></td>
+          <td>None</td>
+          <td>Temporary shadow copy</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="netexec-as-a-wrapper">NetExec as a Wrapper<a hidden class="anchor" aria-hidden="true" href="#netexec-as-a-wrapper">#</a></h2>
+<p>NetExec makes heavy use of Impacket scripts and its <a href="https://github.com/Pennyw0rth/NetExec/blob/main/nxc/protocols/smb.py"><code>smb.py</code></a> script, which includes the NTDS extraction module, is no different.</p>
+<p>The <a href="https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit?q=raw-ntds-copy#dump-all-users-from-the-ntds.dit"><code>--ntds</code></a> flag is simply a wrapper around Impacket&rsquo;s <code>secretsdump</code>. In brief, it imports <code>NTDSHashes</code> from secretsdump and calls it with <code>useVSSMethod=False</code>, triggering its DRSUAPI code path. This is identical to running <code>secretsdump.py -just-dc</code> directly.</p>
+<figure>
+    <img loading="lazy" src="/images/nxc-drsuapi-1.png"
+         alt="The relevant code snippet from netexec&#39;s smb.py script." width="500"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/nxc-drsuapi-2.png"
+         alt="The relevant code snippet from netexec&#39;s smb.py script." width="300"/> 
+</figure>
+
+<p>Just like DRSUAPI, NetExec also includes the <a href="https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit?q=raw-ntds-copy#dump-all-users-from-the-ntds.dit"><code>--ntds vss</code></a> flag, which simply sets <code>useVSSMethod=True</code> and triggers the VSS path:</p>
+<figure>
+    <img loading="lazy" src="/images/nxc-drsuapi-3.png"
+         alt="The relevant code snippet from netexec&#39;s smb.py script." width="500"/> 
+</figure>
+
+<h1 id="next">Next<a hidden class="anchor" aria-hidden="true" href="#next">#</a></h1>
+<p>In <a href="/posts/password-audits-part-2/">Part 2</a>, we&rsquo;ll process the extracted <code>NTDS.dit</code> database to organize password hashes for efficient cracking. We&rsquo;ll parse the raw output into structured formats, separate user accounts from computer accounts, identify privileged credentials, and prepare our hash lists for analysis. The extraction phase is complete; now we transform raw database dumps into actionable intelligence.</p>
+<p><strong>Next:</strong> <a href="/posts/password-audits-part-2/">Password Audits Part 2: Hash Organization →</a></p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">mollysec</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
