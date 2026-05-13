@@ -145,10 +145,14 @@
 <p>I haven&rsquo;t seen anyone else talking about this, so it might be that the environment had some issues unrelated to <code>ligolo-ng</code> that just happened to resolved when I switched to the outdated version. I will never know!</p>
 <h2 id="evasion">Evasion<a hidden class="anchor" aria-hidden="true" href="#evasion">#</a></h2>
 <p>As I already mentioned, some CAPE-related articles can give the impression that evasion is a big part of the exam. I have to admit, I am all about AD, but not at all about red teaming; at least not for now.</p>
-<p>Based on the course content (only 1/15 modules touched on evasion), I found the idea of evasion being an important part of a mostly AD-pentesting-focused exam bizarre.</p>
+<p>Based on the course content (only 1/15 modules touched on evasion), I found the idea of evasion being an important part of an AD-pentesting-focused exam bizarre.</p>
 <p>I am not saying there is anything wrong with having a VM compiling custom exploits and bypassing Defender like it is not even there. What I am saying is that I was not in the mood for that, and that my goal was to do the bare minimum on that front.</p>
-<p>So whenever an out-of-box binary was blocked by Defender, I just used the obfuscated version of it. For example, if I wanted to run <code>winPEASany.exe</code> and had issues with it, I would try <code>winPEASany_ofs.exe</code>.</p>
-<p>I was also planning of not using a C2, but I ended up using it where I had issues with reverse shell payloads. I found it easier to generate an obfuscated beacon, rather than trying payload after payload wishing that one will successfully land.</p>
+<p>My idea of evasion before sitting for CAPE was the following:</p>
+<ul>
+<li>If an out-of-box binary was blocked by Defender (e.g. <code>winPEASany.exe</code>), I would just use its obfuscated version (e.g. <code>winPEASany_ofs.exe</code>).</li>
+<li>If I needed a reverse shell and none of my go-to <a href="https://www.revshells.com/">revshells.com</a> payloads work, I would opt for an obfsucated Sliver beacon (ugh!).</li>
+</ul>
+<p>It was not always straightforward, but it was not so hard either. Believe me when I say, since I managed to work through the evasion part, you certainly can too!</p>
 <h2 id="context">Context<a hidden class="anchor" aria-hidden="true" href="#context">#</a></h2>
 <p>For context, prior to CAPE, I had close to zero professional AD-related experience and somewhat average lab experience. More specifically:</p>
 <ul>
@@ -242,7 +246,7 @@
       <tr>
           <td><a href="https://www.hackthebox.com/machines/Sendai">Sendai</a></td>
           <td>Medium</td>
-          <td>ACL-Based Enum, Troubleshooting Auth Erros (<code>STATUS_PASSWORD_MUST_CHANGE</code>), ADCS</td>
+          <td>ACL-Based Enum, Troubleshooting Auth Erros, ADCS</td>
       </tr>
       <tr>
           <td><a href="https://www.hackthebox.com/machines/babytwo">BabyTwo</a></td>

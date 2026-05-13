@@ -2,7 +2,7 @@
 title: "Password Audits Part 1: NTDS Extraction"
 date: "2026-03-13"
 author: "mollysec"
-description: "NTDS extraction methods."
+description: "How is really NTDS extracted?"
 featured: true
 tags: [
 
@@ -11,39 +11,29 @@ categories: [
 
 ]
 series: "Password Audits"
-thumbnail: "/images/password-audits-part-1-thumbnail.jpg"
 draft: true
 ---
 
-# What about Password "Audits"?
+# Introduction
 
->**Note**: This article focuses on the, one-level deep, technical mechanics of NTDS extraction during pentests. OPSEC considerations are out of scope. Sorry!
-
-I recently went from testing (close-to-zero-functionality) APIs to testing, almost, everything. I am talking about web apps, GraphQL APIs, cloud configs, build reviews, external and internal assessments, the whole shebang.
-
-<!-- It sounds like a lot, isn't? I might need to ask for a raise...
-
-{{<figure 
-    src="/images/broke-make-it-rain.gif"
-    alt="A meme showing a man that make a dollar note to dissappear."
-    width="330"
-    caption=""
->}}  -->
-
-One part of internal testing is conducting a **Password Audit**, which can be summed up as follows:
+I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internal assessments. The latter consists of many parts; one of them is assessing the passwords used within the domain (what we call a Password Audit). This can be summed up as follows:
 
 ---
-Extract NTDS &rarr; Clean/Organise NTDS &rarr; Recover NTDS &rarr; Generate stats.  
+**Extract NTDS** &rarr; Clean/Organise NTDS &rarr; Recover NTDS &rarr; Generate stats.  
 
 ---
 
-Sounds simple, doesn't it? Well, for normal people, it is actually pretty straightforward and even boring after a while! But I am not one of those people. One of my greatest joys in life is to overcomplicate the simple things.
+The process sounds simple, and it really is pretty straightforward, for normal people. But I am not one of those people; one of my greatest joys in life is to overcomplicate the simple things.
 
-So, buckle up.
+So, buckle up. Or don't really. 
+
+My goal here is to simply dip my toes just one-level deeper that what I encounter in my day-to-day life; nothing more than that. Don't expect deep-diving on Microsoft protocols, analysing every line code of Secretsdump, or listing every possible NTDS extraction method. 
+
+None of that, just simple, daily stuff!
 
 # TL;DR on NTDS
 
-As you probably know already, passwords are stored server side in databases in a strange-looking format called a hash. In an AD environment, this database is called [NT Directory Services Directory Information Tree](https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782) (NTDS.dit) and is located within the Key Distribution Centre (KDC).
+As you probably know already, passwords are stored server side in databases in a strange-looking format called a hash. In an Active Directory (AD) environment, this database is called [NT Directory Services Directory Information Tree](https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782) (`NTDS.dit`) and is located within the Key Distribution Centre (KDC).
 
 {{<figure 
     src="/images/hash-process.png"
@@ -52,38 +42,37 @@ As you probably know already, passwords are stored server side in databases in a
     caption=""
 >}} 
 
-Some relevant facts about NTDS:
-* Every domain controller (DC) contains a copy of the NTDS.
-* All DCs are kept in sync with each other via a process called [Replication](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations).
-* NTDS is encrypted, therefore, unusable by itself (shoot!).
-* The SYSTEM registry hive has the encryption key, aka SYSKEY (phew!).
+It is worth noting that NTDS is encrypted, therefore, unusable by itself (shoot!). However, the SYSTEM registry hive has the encryption key, aka `SYSKEY` (phew!). So we need both the NTDS and the SYSKEY in order to decrypt the former and get the hashes.
 
-The bottom line is that we need both the NTDS and the SYSKEY in order to decrypt the former and get the hashes. Remember that we are talking about testing and not *hacking*, so we get handed both on a silver plate. The *testee* gives us a Domain Admin (DA) account which has permissions (more on that later) to obtain both with a single command. Life is good!
+Also it might be worth clarifying that I am talking about pentesting here, not *red teaming* or *hacking*. We are given a Domain Admin (DA) account from the client right away and the client expects us to pull the NTDS, so we don't need to be *silent*. As a result, OPSEC considerations are out of scope.
 
-Imagine now that someone thought to write a whole article for that single command...
+<!-- Imagine now that someone thought to write a whole article for that single command... -->
 
-{{<figure 
+<!-- {{<figure 
     src="/images/spongebob-delulu.gif"
     alt="A meme of spongebob saying 'Delulu'."
     width="400"
     caption=""
->}} 
+>}}  -->
 
-# NTDS Extraction
+Since we don't need to *hack* our way into DA, our goal is to get the NTDS **as complete and as fast as possible**. The process is typically done remotely from a Kali host, so I will focus on two approaches: DSRUAPI and VSS.
 
-Since we don't need to *hack* our way into DA, our goal is to get the NTDS **as complete and as fast as possible**. We can do that both remotely (DRSUAPI or VSS) or locally (NTDSUTIL or VSSADMIN). 
-
-If those acronyms don't ring a bell, worry not; it is almost certain that you have used them multiple times already!
-
-In practice, NTDS extraction comes down to two approaches: DSRUAPI (DCSync) and VSS.
+If those acronyms don't ring a bell, worry not; I am certain that you have used them multiple times already and it just happened to don't know it yet. 
 
 # DRSUAPI
 
-## Theory
+As there are typically many Domain Controllers (DCs) within a domain, it makes sense for every DC to have a copy of the NTDS. Otherwise, it would get messy really quick! This is done via a process called [Replication](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations), which helps keeping every DC in sync with each other. 
 
-This is the **DCSync** approach, the default method of most tools. It's the fastest one as it avoids disk I/O entirely; all data is transmitted over the network via RPC (TCP 135) and dynamic high ports (TCP 49152-65535). If you are using this and it's failing for no apparent reason, check if those RPC ports are blocked!
+This process happens on regular intervals via the [Directory Replication Service Remote Protocol (MS-DRSR)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47). DRSUAPI is one of the two RPC interfaces of DRS and, as I get it, stands for three things:
 
-The goal of DC-Sync is in the name: **impersonate a DC and ask a legit DC to sync with us**.
+1. DRS &rarr; the Directory Replication Service remote protocol
+2. U &rarr; the fact that DRS is used to update (i.e., sync) the DCs
+3. API &rarr; the Microsoft Application Programming Interface that is used to implement the above
+
+DRSUAPI (or DCSync) is the default method of `secretsdump` (and therefore its wrappers, e.g. `netexec`). The goal is simple:
+
+1. Let our host impersonate a DC
+2. Then ask a real DC to sync with our host
 
 {{<figure 
     src="/images/look-at-me-i-am-the-dc-now.png"
@@ -92,9 +81,7 @@ The goal of DC-Sync is in the name: **impersonate a DC and ask a legit DC to syn
     caption=""
 >}}
 
-This process is known as **DC-to-DC replication** and is a legit process that happens on regular intervals via the [Directory Replication Service Remote Protocol (MS-DRSR)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47). Simply put, the DRS protocol is what DCs use to communicate and sync their databases with each other.
-
-The DRS protocol has two RPC interfaces, but we mostly care about the one: **DRSUAPI**. This is because DRSUAPI includes the [`IDL_DRSGetNCChanges`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894) function which is a part of the [`IDL_DRS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410) methods. We will dig more into that later.
+This is because DRSUAPI includes the [`IDL_DRSGetNCChanges`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894) function which is a part of the [`IDL_DRS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410) methods. We will dig more into that later.
 
 Obviously, not everyone can ask a DC for data, that would be [glaikit](https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit). But DAs have the permissions to do it, more specifically, the [Replicating Directory Changes](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes) and [Replicating Directory Changes All](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all). We will see why we need both of them soon.
 
@@ -119,13 +106,15 @@ When we run Impacket's `secretsdump.py` (or NetExec's `--ntds`), we are triggeri
     {{<figure 
         src="/images/makes-sense-fallon.gif"
         alt="A meme showing Jimmy Fallon undestanding something."
-        width="300"
+        width="400"
         caption=""
     >}}
 
 3. **IDL_DRSUnbind** (Cleanup)
 
     Once we've replicated what we need, my assumption was that well-behaved tools would call `IDL_DRSUnbind` to explicitly close the connection and release the `DRS_HANDLE`; however, that was not the case.
+
+ It's the fastest one as it avoids disk I/O entirely; all data is transmitted over the network via RPC (TCP 135) and dynamic high ports (TCP 49152-65535). If you are using this and it's failing for no apparent reason, check if those RPC ports are blocked!
 
 Some questions might have surfaced through your mind by now:
 - *Didn't we say that DCSync mimics DC-to-DC replication? But our attacking machine isn't a DC, right?*

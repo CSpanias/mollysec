@@ -36,12 +36,5 @@
       <guid>http://localhost:1313/tags/htb/</guid>
       <description></description>
     </item>
-    <item>
-      <title>Active Directory Pentesting Expert</title>
-      <link>http://localhost:1313/tags/active-directory-pentesting-expert/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/active-directory-pentesting-expert/</guid>
-      <description></description>
-    </item>
   </channel>
 </rss>

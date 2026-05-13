@@ -40,13 +40,15 @@ I haven't seen anyone else talking about this, so it might be that the environme
 
 As I already mentioned, some CAPE-related articles can give the impression that evasion is a big part of the exam. I have to admit, I am all about AD, but not at all about red teaming; at least not for now. 
 
-Based on the course content (only 1/15 modules touched on evasion), I found the idea of evasion being an important part of a mostly AD-pentesting-focused exam bizarre.
+Based on the course content (only 1/15 modules touched on evasion), I found the idea of evasion being an important part of an AD-pentesting-focused exam bizarre.
 
 I am not saying there is anything wrong with having a VM compiling custom exploits and bypassing Defender like it is not even there. What I am saying is that I was not in the mood for that, and that my goal was to do the bare minimum on that front.
 
-So whenever an out-of-box binary was blocked by Defender, I just used the obfuscated version of it. For example, if I wanted to run `winPEASany.exe` and had issues with it, I would try `winPEASany_ofs.exe`. 
+My idea of evasion before sitting for CAPE was the following:
+- If an out-of-box binary was blocked by Defender (e.g. `winPEASany.exe`), I would just use its obfuscated version (e.g. `winPEASany_ofs.exe`).
+- If I needed a reverse shell and none of my go-to [revshells.com](https://www.revshells.com/) payloads work, I would opt for an obfsucated Sliver beacon (ugh!).
 
-I was also planning of not using a C2, but I ended up using it where I had issues with reverse shell payloads. I found it easier to generate an obfuscated beacon, rather than trying payload after payload wishing that one will successfully land.
+It was not always straightforward, but it was not so hard either. Believe me when I say, since I managed to work through the evasion part, you certainly can too!
 
 ## Context
 
@@ -117,7 +119,7 @@ As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff
 | [Voleur](https://www.hackthebox.com/machines/VOLEUR) | Medium | Kerberos, DPAPI, Deleted Objects |
 | [Breach](https://www.hackthebox.com/machines/Breach) | Medium | SMB Uploads, MSSQL |
 | [Delegate](https://www.hackthebox.com/machines/delegate) | Medium | ACL-Based Enum, Unconstrained Delegation |
-| [Sendai](https://www.hackthebox.com/machines/Sendai) | Medium | ACL-Based Enum, Troubleshooting Auth Erros (`STATUS_PASSWORD_MUST_CHANGE`), ADCS |
+| [Sendai](https://www.hackthebox.com/machines/Sendai) | Medium | ACL-Based Enum, Troubleshooting Auth Erros, ADCS |
 | [BabyTwo](https://www.hackthebox.com/machines/babytwo) | Medium | Logon Scripts, ACL-Based Enum, GPO Abuse |
 | [Escape](https://www.hackthebox.com/machines/Escape) | Medium | MSSQL, ADCS |
 | [Phantom](https://www.hackthebox.com/machines/Phantom) | Medium | Password Spray, RBCD |
