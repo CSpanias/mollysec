@@ -304,8 +304,6 @@ Most of us use `secretsdump` directly or indirectly (e.g. via wrappers like [Net
 |`-pwd-last-set`|When each password was last changed based on the [`pwdLastSet`](https://learn.microsoft.com/en-us/windows/win32/adschema/a-pwdlastset) attribute, again, useful for checking patterns.|
 |`-user-status`|Show whether accounts are enabled, disabled, or locked. Do we even need disabled accounts on our data?|
 
-> TO-CHECK: `user-status` is binary (enabled/disabled) or includes locked?
-
 # Honorable Mention
 
 As we now know, `secretsdump`'s DCSync uses a multi-protocol approach that requires both SMB (authentication) and RPC (DRSUAPI calls) access. In addition, when Kerberos is used, we need to have the `CIFS/domaincontroller` SPN.
