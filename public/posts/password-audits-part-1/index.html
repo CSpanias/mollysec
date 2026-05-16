@@ -217,7 +217,7 @@
 <p>To get the actual credentials, we need to include the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813"><code>EXOP_REPL_SECRETS</code></a> flag. In order to do that, we need the Replicating Directory Changes All permission (2/2).</p>
 <figure>
     <img loading="lazy" src="/images/now-were-on-the-same-page-joe-dirt.gif"
-         alt="A image of an actor saying &#39;Now we&#39;re on the same page&#39;." width="550"/> 
+         alt="A image of an actor saying &#39;Now we&#39;re on the same page&#39;." width="500"/> 
 </figure>
 
 <p>So after <code>secretsdump</code> has established the session and has the handle going, as we would expect, it calls <code>DRSGetNCChanges</code> along with the <code>EXOP_REPL_OBJ</code> flag:</p>
@@ -273,13 +273,13 @@
 <p>The <a href="https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service">Volume Shadow Copy Service</a> (VSS) method (<code>-use-vss</code>) is a completely different approach from DCSync. The overall goal here is to create a copy of the NTDS. However, a file cannot be copied if it is actively being used. In an AD environment, <code>NTDS</code> is used 24/7, therefore, it is effectively always locked!</p>
 <figure>
     <img loading="lazy" src="/images/ice-age-sid.gif"
-         alt="The character from the movie Ice Age saying &#39;Ohhhm. This is a problem&#39;." width="450"/> 
+         alt="The character from the movie Ice Age saying &#39;Ohhhm. This is a problem&#39;." width="500"/> 
 </figure>
 
 <p>VSS solves that problem: instead of trying to copy the locked file directly, it creates a snapshot (i.e., a read-only point-in-time copy) of the DC&rsquo;s entire volume (e.g. <code>C:\</code>). Within this snapshot, <code>NTDS</code> (and <code>SYSTEM</code>!) is no longer actively in use, meaning it is no longer locked, and, therefore, can be safely copied.</p>
 <figure>
     <img loading="lazy" src="/images/problem-solved-great.gif"
-         alt="The comedian Trevor Noah saying &#39;Problem solved&#39;." width="450"/> 
+         alt="The comedian Trevor Noah saying &#39;Problem solved&#39;." width="500"/> 
 </figure>
 
 <p>It should be noted that the permission to create a shadow copy (<a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/security-policy-settings/back-up-files-and-directories"><code>SeBackupPrivilege</code></a>) is typically assigned only to <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#administrators">Administrators</a> and members of the <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#backup-operators">Backup Operators</a> or <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#server-operators">Server Operators</a> groups.</p>

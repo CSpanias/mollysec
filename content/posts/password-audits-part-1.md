@@ -153,7 +153,7 @@ To get the actual credentials, we need to include the [`EXOP_REPL_SECRETS`](http
 {{<figure 
     src="/images/now-were-on-the-same-page-joe-dirt.gif"
     alt="A image of an actor saying 'Now we're on the same page'."
-    width="550"
+    width="500"
     caption=""
 >}}
 
@@ -208,7 +208,7 @@ The [Volume Shadow Copy Service](https://learn.microsoft.com/en-us/windows-serve
 {{<figure 
     src="/images/ice-age-sid.gif"
     alt="The character from the movie Ice Age saying 'Ohhhm. This is a problem'."
-    width="450"
+    width="500"
     caption=""
 >}}
 
@@ -217,7 +217,7 @@ VSS solves that problem: instead of trying to copy the locked file directly, it 
 {{<figure 
     src="/images/problem-solved-great.gif"
     alt="The comedian Trevor Noah saying 'Problem solved'."
-    width="450"
+    width="500"
     caption=""
 >}}
 
