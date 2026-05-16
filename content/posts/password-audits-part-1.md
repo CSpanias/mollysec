@@ -295,7 +295,7 @@ Most of us use `secretsdump` directly or indirectly (e.g. via wrappers like [Net
 
 |Flag|Description|
 |---|---|
-|`just-dc`|Extracts only `NTDS` data, i.e., NTLM hashes and Kerberos keys.|
+|`-just-dc`|Extracts only `NTDS` data, i.e., NTLM hashes and Kerberos keys.|
 |`-just-dc-ntlm`|Extracts only NTLM hashes, faster for large domains. Do we even need Kerberos keys?|
 |`-just-dc-user`|Extracts credentials for a target user, can be useful for validation.|
 |`-history`|Includes the [`ntPwdHistory`](https://learn.microsoft.com/en-us/windows/win32/adschema/a-ntpwdhistory) and [`lmPwdHistory`](https://learn.microsoft.com/en-us/windows/win32/adschema/a-lmpwdhistory) attributes, useful for checking patterns.|

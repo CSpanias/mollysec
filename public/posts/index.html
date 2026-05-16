@@ -10,7 +10,7 @@
 <meta name="description" content="Posts - mollysec">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.d96a8946d22452f752dffb214c0167ff2e93dc42eab51e40fc67620b9e047820.css" integrity="sha256-2WqJRtIkUvdS3/shTAFn/y6T3ELqtR5A/GdiC54EeCA=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.1c1617080dbb6ae5add8442d3b25f09bd9648100e3da325098081622225af159.css" integrity="sha256-HBYXCA27auWt2EQtOyXwm9lkgQDj2jJQmAgWIiJa8Vk=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
@@ -203,19 +203,11 @@ Organising secrets How the current tool (secretsorganise) works exactly? Are the
 <article class="post-entry"> 
   <header class="entry-header">
     <h2 class="entry-hint-parent">Password Audits Part 1: NTDS Extraction
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
     </h2>
   </header>
   <div class="entry-content">
-    <p>Introduction I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internals. An internal test consists of many different parts, one of them is assessing the passwords used within the domain; what we call a password audit.
-This can be summed up as follows:
-Extract NTDS → Clean/Organise NTDS → Recover NTDS → Generate stats.
-The process sounds simple, and, for normal people, it really is. But I am not one of those people; one of my greatest joys in life is to overcomplicate the simple things. So, buckle up (don’t really)!
+    <p>Introduction This article is about pentesting, not red teaming. We are given a DA account to extract NTDS, we don’t need to be stealthy or anything of that sort. Therefore, OPSEC considerations out of scope.
+I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internal assessments. An internal test consists of many different parts, one of which is assessing the passwords used within the domain (what we call a password audit).
 ...</p>
   </div>
   <footer class="entry-footer">

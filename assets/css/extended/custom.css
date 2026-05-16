@@ -5,10 +5,15 @@ body {
 
 /* Increase content width */
 .main {
-    --main-width: 850px !important;
+    --main-width: 950px !important;
 }
 
 /* Ensure post content uses full width */
 .post-content {
     max-width: 100% !important;
+}
+
+/* Avoid wrapping the first column */
+table td:first-child code {
+  white-space: nowrap;
 }
