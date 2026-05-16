@@ -317,4 +317,5 @@ However, for most internal assessments, this distinction is just a good to know 
 |`lsadump::dcsync /domain:mollysec.local /all /csv`|Complete extraction.|
 |`lsadump::dcsync /domain:mollysec.local /user:Administrator`|Targeted extraction.|
 
-**Next:** [Password Audits Part 2: Hash Organization (in progress!) →] /* (/posts/password-audits-part-2/) */
+**Next:** [Password Audits Part 2: Hash Organization (**in progress!**) →]
+<!-- (/posts/password-audits-part-2/) -->
