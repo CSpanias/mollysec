@@ -2,7 +2,7 @@
 title: "Password Audits Part 1: NTDS Extraction"
 date: "2026-03-13"
 author: "mollysec"
-description: "How is really NTDS extracted?"
+description: "NTDS extraction in practice: DCSync vs VSS"
 featured: true
 tags: [
 
@@ -11,29 +11,33 @@ categories: [
 
 ]
 series: "Password Audits"
-draft: true
+draft: false
 ---
 
 # Introduction
 
-I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internal assessments. The latter consists of many parts; one of them is assessing the passwords used within the domain (what we call a Password Audit). This can be summed up as follows:
+> This article is about **pentesting**, not red teaming. We are given a DA account to extract NTDS, we don't need to be *stealthy* or anything of that sort. Therefore, **OPSEC considerations out of scope**.
+
+I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internal assessments. An internal test consists of many different parts, one of which is assessing the passwords used within the domain (what we call a password audit). 
+
+This can be summed up as follows:
 
 ---
 **Extract NTDS** &rarr; Clean/Organise NTDS &rarr; Recover NTDS &rarr; Generate stats.  
 
 ---
 
-The process sounds simple, and it really is pretty straightforward, for normal people. But I am not one of those people; one of my greatest joys in life is to overcomplicate the simple things.
+The process sounds simple, and, for normal people, it really is. But I am not one of those people; one of my greatest joys in life is to overcomplicate the simple things. So, buckle up (or don't, really)!
 
-So, buckle up. Or don't really. 
+The goal of this article is to simply dip my toes one level deeper into what I encounter during the password audit process. Don't expect a deep dive into Microsoft protocols, listing every possible NTDS extraction method, or doing fancy password attacks. We are here for the simple, boring, daily stuff!
 
-My goal here is to simply dip my toes just one-level deeper that what I encounter in my day-to-day life; nothing more than that. Don't expect deep-diving on Microsoft protocols, analysing every line code of Secretsdump, or listing every possible NTDS extraction method. 
+I will (selfishly) try to break down this process into four parts with the goal of improving my life by understanding what I am doing a tiny bit better. Most courses demonstrate how to use [hashcat](https://github.com/hashcat/hashcat) or [JtR](https://github.com/openwall/john) to crack hashes, but even the most thorough ones, the likes of [CPTS](https://academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist), [PNPT](https://certifications.tcm-sec.com/pnpt/), and [CAPE](https://academy.hackthebox.com/preview/certifications/htb-certified-active-directory-pentesting-expert), never touch on a topic like this.
 
-None of that, just simple, daily stuff!
+So I thought, since I will spend some time "researching" this topic anyway, why not write a short article about it? So I did.
 
 # TL;DR on NTDS
 
-As you probably know already, passwords are stored server side in databases in a strange-looking format called a hash. In an Active Directory (AD) environment, this database is called [NT Directory Services Directory Information Tree](https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782) (`NTDS.dit`) and is located within the Key Distribution Centre (KDC).
+As you probably know already, passwords are stored server-side in databases in a strange-looking format called a hash. In an Active Directory (AD) environment, this database is called [NT Directory Services Directory Information Tree](https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782) (`NTDS.dit`) and is located within the Key Distribution Centre (KDC).
 
 {{<figure 
     src="/images/hash-process.png"
@@ -42,37 +46,27 @@ As you probably know already, passwords are stored server side in databases in a
     caption=""
 >}} 
 
-It is worth noting that NTDS is encrypted, therefore, unusable by itself (shoot!). However, the SYSTEM registry hive has the encryption key, aka `SYSKEY` (phew!). So we need both the NTDS and the SYSKEY in order to decrypt the former and get the hashes.
+`NTDS` is encrypted and, therefore, unusable (for our purposes) by itself. To decrypt it, we need the encryption key, also known as Boot Key or [`Syskey`](https://learn.microsoft.com/en-us/windows-server/security/kerberos/system-key-utility-technical-overview) from the [`SYSTEM`](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc781906(v=ws.10)#hive-files) registry hive. As you will see later, this detail is relevant to the VSS method.
 
-Also it might be worth clarifying that I am talking about pentesting here, not *red teaming* or *hacking*. We are given a Domain Admin (DA) account from the client right away and the client expects us to pull the NTDS, so we don't need to be *silent*. As a result, OPSEC considerations are out of scope.
+The NTDS extraction process is typically done remotely from a Kali host and it comes down to two methods: DCSync (default) and VSS (`-use-vss`). The plan is to see what these approaches are (at a high-level) and how [`secretsdump`](https://github.com/fortra/impacket/blob/master/examples/secretsdump.py) implements them.
 
-<!-- Imagine now that someone thought to write a whole article for that single command... -->
+Let's start with the default one.
 
-<!-- {{<figure 
-    src="/images/spongebob-delulu.gif"
-    alt="A meme of spongebob saying 'Delulu'."
-    width="400"
-    caption=""
->}}  -->
+# DCSync (via DRSUAPI)
 
-Since we don't need to *hack* our way into DA, our goal is to get the NTDS **as complete and as fast as possible**. The process is typically done remotely from a Kali host, so I will focus on two approaches: DSRUAPI and VSS.
+## Replication
 
-If those acronyms don't ring a bell, worry not; I am certain that you have used them multiple times already and it just happened to don't know it yet. 
+As there are typically many Domain Controllers (DCs) within a domain, it makes sense for every DC to have a copy of the NTDS. Otherwise, it would get messy real quick!
 
-# DRSUAPI
+This is done via the [Replication](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations) process, which is how DCs are keeping in sync with each other. This process happens on regular intervals through the [Directory Replication Service Remote Protocol (MS-DRSR)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47).
 
-As there are typically many Domain Controllers (DCs) within a domain, it makes sense for every DC to have a copy of the NTDS. Otherwise, it would get messy really quick! This is done via a process called [Replication](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations), which helps keeping every DC in sync with each other. 
-
-This process happens on regular intervals via the [Directory Replication Service Remote Protocol (MS-DRSR)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47). DRSUAPI is one of the two RPC interfaces of DRS and, as I get it, stands for three things:
+DRSUAPI is one of the two RPC interfaces of DRS and, as I get it, its name is a combination of three things:
 
 1. DRS &rarr; the Directory Replication Service remote protocol
 2. U &rarr; the fact that DRS is used to update (i.e., sync) the DCs
-3. API &rarr; the Microsoft Application Programming Interface that is used to implement the above
+3. API &rarr; the Application Programming Interface that is used to implement this update
 
-DRSUAPI (or DCSync) is the default method of `secretsdump` (and therefore its wrappers, e.g. `netexec`). The goal is simple:
-
-1. Let our host impersonate a DC
-2. Then ask a real DC to sync with our host
+DCSync abuses the assumption that certain permissions (more on that later) are only granted to highly trusted entities (like DCs). It kind of "impersonates" a DC and then asks a real DC to sync with us.
 
 {{<figure 
     src="/images/look-at-me-i-am-the-dc-now.png"
@@ -81,350 +75,248 @@ DRSUAPI (or DCSync) is the default method of `secretsdump` (and therefore its wr
     caption=""
 >}}
 
-This is because DRSUAPI includes the [`IDL_DRSGetNCChanges`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894) function which is a part of the [`IDL_DRS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410) methods. We will dig more into that later.
+You might be wondering: *How does our host impersonate a DC?*
 
-Obviously, not everyone can ask a DC for data, that would be [glaikit](https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit). But DAs have the permissions to do it, more specifically, the [Replicating Directory Changes](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes) and [Replicating Directory Changes All](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all). We will see why we need both of them soon.
+The short answer is: it doesn’t. The (legit) DC exposes the replication functionality (via DRSUAPI) to any authenticated client that has the appropriate permissions; it never verifies whether the client is a DC or not.
 
->[Replicating Directory Changes In Filtered Set](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-in-filtered-set) might also be needed when dealing with [RODC](https://learn.microsoft.com/en-us/windows/win32/ad/rodc-and-active-directory-schema), but that had never happened to me during my extensive three months-career doing internal testing.
+The reality is that we don't actually want to fully impersonate a DC anyway. The actual DC-to-DC replication process has some protections in place: communication is typically performed using [Kerberos](https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview), with [mutual authentication](https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos) (so both sides verify who they're talking to) and [encryption](https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy) (so the exchanged data stays safe in transit).
 
-When we run Impacket's `secretsdump.py` (or NetExec's `--ntds`), we are triggering a sequence of DRS calls:
+As an example, if we were fully impersonating a DC, we probably wouldn't be able to use NTLM authentication (`-hashes`). We are able to do so because when a non-DC host connects to a DC, the latter couldn't give a [puck](https://www.dota2.com/hero/puck) about enforcing secure communication; as long as we have the right permissions, we can simply call the DRSUAPI replication interface. 
 
-1. **IDL_DRSBind** (The Handshake)
+DCSync leverages the legit replication process, while bypassing the assumptions those protections rely on!
 
-    Before we can request anything, we first need to establish a connection with the DC. This method creates a `DRS_HANDLE` (kind of a session token) that proves we've successfully authenticated and are authorised to make replication requests. This handle remains valid for all subsequent operations until we explicitly call `IDL_DRSUnbind` or the server invalidates it (e.g., due to timeout or errors).
+{{<figure 
+    src="/images/dahliabunni-like-a-boss.gif"
+    alt="An image of Holywood actors singing 'Like a boss'."
+    width="500"
+    caption=""
+>}}
 
-    When a tool fails with a `bind failed` error, something has gone wrong here.
+At first glance, the fact that the DC does not verify that the client is also a DC might seem like a major security gap. However, the replication process needs to be used by more systems than just DCs, such as backup tools and monitoring software, so, it cannot realistically be restricted to just them.
 
-2. **IDL_DRSGetNCChanges** (Replicating Data)
-
-    This is the function that actually replicates directory data from the DC to our host. To call this function we need the **Replicating Directory Changes** permission. However, just calling `IDL_DRSGetNCChanges` only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials.
-
-    To get the actual credentials, we need to include the [`EXOP_REPL_SECRETS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813) flag. In order to do that, we need the **Replicating Directory Changes All** permission.
-
-    Now you know why we need both permissions!
-
-    {{<figure 
-        src="/images/makes-sense-fallon.gif"
-        alt="A meme showing Jimmy Fallon undestanding something."
-        width="400"
-        caption=""
-    >}}
-
-3. **IDL_DRSUnbind** (Cleanup)
-
-    Once we've replicated what we need, my assumption was that well-behaved tools would call `IDL_DRSUnbind` to explicitly close the connection and release the `DRS_HANDLE`; however, that was not the case.
-
- It's the fastest one as it avoids disk I/O entirely; all data is transmitted over the network via RPC (TCP 135) and dynamic high ports (TCP 49152-65535). If you are using this and it's failing for no apparent reason, check if those RPC ports are blocked!
-
-Some questions might have surfaced through your mind by now:
-- *Didn't we say that DCSync mimics DC-to-DC replication? But our attacking machine isn't a DC, right?*
-
-    Here's the thing: legitimate DCs only talk through Kerberos with [mutual authentication](https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos) (so both sides verify who they're 
-    talking to) and [encrypted traffic](https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy) (so the exchanged data stays safe in transit). We want to use the legitimate DC-to-DC sync process, but we don't want the security protections that come with it.
-
-- *But if the DCSync process only uses Kerberos, how can we use NTLM hashes (e.g. `secretsdump.py -hashes`)?*
-
-    Well, here's the interesting part: when a **non-DC host** connects to a DC, the DC couldn't give a [puck](https://www.dota2.com/hero/puck) about mutual authentication and encryption; it accepts both Kerberos and NTLM authentication. The DC will only check if our account has the replication permissions.
-
-|Legit DC Replication|DCSync|
-|---|---|
-|Requests all changes since last sync (incremental)|Requests specific objects with secrets (targeted)|
-|Updates replication metadata to track sync state|Doesn't update any replication metadata|
-|Happens continuously in the background between DCs|One-time operation initiated by us|
-|Requests everything (objects, attributes, metadata, etc.)|Only requests credential-related attributes|
-
-Another thing to point out is that when our tool of choice connects to a DC for replication, it constructs a very [specific SPN](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f):
+It is also worth noting that when Kerberos is used as the authentication method, the client constructs a very [specific Service Principal Name (SPN)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f) for the replication service, which looks like this:
 
 ```text
-General format:
-E3514235-4B06-11D1-AB04-00C04FC2DCD2/<target DC GUID>/<domain FQDN>
+E3514235-4B06-11D1-AB04-00C04FC2DCD2/<target DC GUID>/<domain's fully qualified domain name (FQDN)>
          └─ Fixed DRS interface GUID (same for every DC)
+```
 
-Example:
+For example, if we are requesting data for the `MOLLYSEC.LOCAL` domain from `DC01` (with a GUID of `f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14`), the SPN would look like this:
+
+```text
 E3514235-4B06-11D1-AB04-00C04FC2DCD2/f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14/mollysec.local
 ```
 
-When we see Kerberos errors, like `KDC_ERR_S_PRINCIPAL_UNKNOWN`, it often means something is wrong with this SPN. As I'm sure, we've all experienced, this is why specifying a DC by its IP address can cause authentication problems; the SPN expects a proper FQDN. Falling back to NTLM authentication (using `-hashes`) often works around the problem.
+When we see Kerberos errors, like `KDC_ERR_S_PRINCIPAL_UNKNOWN`, it often means something is not right with this SPN. This is why specifying a DC by its IP address can cause authentication problems; the SPN expects a proper FQDN (falling back to NTLM authentication, e.g. using `-hashes`, often works around the problem).
+
+Obviously, not everyone can ask a DC for data, that would be [glaikit](https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit). However, [Domain Admins](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#administrators) (and DCs of course!) have the following two required permissions:
+- [Replicating Directory Changes](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes)
+- [Replicating Directory Changes All](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all)
+
+Why we need both, will become clear soon.
+
+>*[Replicating Directory Changes In Filtered Set](https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-in-filtered-set) might also be needed when dealing with [RODC](https://learn.microsoft.com/en-us/windows/win32/ad/rodc-and-active-directory-schema), but that had never happened to me during my extensive three months-career doing internal testing.*
+
+## The (High-Level) DCSync Process
+
+Before we can request anything, we first need to authenticate. When we do, the underlying authentication process (Kerberos or NTLM) establishes a **session key**. This key is used to encrypt and sign all subsequent communication with the DC.
+
+When we run `secretsdump`, we are essentially triggering a sequence of [`IDL_DRS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410) calls. The three core ones are described below.
+
+### 1. The Handshake (IDL_DRSBind)
+
+As per Microsoft:
+
+> *[`IDL_DRSBind`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/605b1ea1-9cdc-428f-ab7a-70120e020a3d) creates a context handle that is necessary to call any other method in this interface.*
+
+The context handle ([`DRS_HANDLE`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/55fed7de-17f5-4ff3-8c53-866df925056a)) is similar to a session cookie; it proves that we've successfully authenticated and are authorised to make replication requests. It remains valid for all subsequent operations until we explicitly call `IDL_DRSUnbind` or the server invalidates it (e.g., due to timeout or errors). 
+
+When a tool fails with a `bind failed` error, something has gone wrong in this step!
+
+So the handle acts as a session identifier for the API, while the session key protects the data exchanged within it. `secretsdump` establishes a DRS session with the DC via the `DRSBind` method:
 
 {{<figure 
-    src="/images/fqdn-kerberos.png"
-    alt="A meme highlighting the common issue of neglecting to use Fully Qualified Domain Names (FQDNs) when using Kerberos."
+src="/images/impacket-drsuapi-1.png"
+alt="The relevant code snippet from secretsdump."
+width="800"
+caption=""
+>}}
+
+### 2. Replicating Data (IDL_DRSGetNCChanges)
+
+This is the function that actually replicates directory data from the DC to our host. 
+
+To call this function we need the Replicating Directory Changes permission (1/2). However, just calling [`IDL_DRSGetNCChanges`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894) only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials. 
+
+To get the actual credentials, we need to include the [`EXOP_REPL_SECRETS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813) flag. In order to do that, we need the Replicating Directory Changes All permission (2/2).
+
+{{<figure 
+    src="/images/now-were-on-the-same-page-joe-dirt.gif"
+    alt="A image of an actor saying 'Now we're on the same page'."
+    width="550"
+    caption=""
+>}}
+
+So after `secretsdump` has established the session and has the handle going, as we would expect, it calls `DRSGetNCChanges` along with the `EXOP_REPL_OBJ` flag:
+
+{{<figure 
+    src="/images/impacket-drsuapi-2.png"
+    alt="The relevant code snippet from secretsdump."
+    width="800"
+    caption=""
+>}}
+
+The `uuidDsaObjDest` and `uuidInvocIdSrc` variables normally represent the destination and source DCs participating in the replication operation. Since our host is not a real DC, `secretsdump` cheekily sets both values to the target DC's GUID to make the request appear legitimate.
+
+### 3. The Cleanup (IDL_DRSUnbind)
+
+Once we've replicated what we need, my assumption was that `secretsdump` would call [`IDL_DRSUnbind`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/49eb17c9-b6a9-4cea-bef8-66abda8a7850) to explicitly close the connection and release the `DRS_HANDLE`. However, I could not find any indication that this function is called within the script. Once again, it seems that my assumption was wrong!
+
+{{<figure 
+    src="/images/wrong-not.gif"
+    alt="An image of President Trump saying the word 'Wrong'."
     width="500"
     caption=""
 >}}
 
-Enough theory for now; let's see `secretsdump.py`'s DCSync implementation.
+## Replication vs DCSync
 
-## Secretsdump
+Although OPSEC considerations are out of scope, it is worth noting that there are some major behavioural differences between the replication process and DCSync. Some of them are listed below.
 
-> Why don't we extract the LA's from the DCs???
+|Replication|DCSync|
+|---|---|
+|Requests all changes since last sync (incremental)|Requests specific objects with secrets (targeted)|
+|Updates replication metadata to track sync state|Doesn't do any of that|
+|Ongoing background process between DCs|One-time operation initiated by a non-DC host|
+|Requests everything (objects, attributes, etc.)|Requests just credential-related attributes|
 
-Impacket's [secretsdump.py](https://github.com/fortra/impacket/blob/master/impacket/examples/secretsdump.py) performs a DCSync operation by default:
-
-```bash
-secretsdump.py MOLLYSEC.LOCAL/molly:Pass123@192.168.1.5
-```
-
-Let's see how secretsdump implements the three-step DRSUAPI process that we are now experts on:
+Now that we are DCSync experts, let's see what VSS is about.
 
 {{<figure 
     src="/images/youre-dealing-with-an-expert-professional.gif"
-    alt="A meme of a soldier ironically saying 'You are dealing witht an expert'."
+    alt="A meme of a soldier ironically saying 'You are dealing with an expert'."
     width="500"
     caption=""
 >}}
-
-1. **IDL_DRSBind** (The Handshake)
-    
-    Secretsdump establishes a DRS session with the DC via the `DRSBind` method by negotiating capabilities:
-
-    {{<figure 
-        src="/images/impacket-drsuapi-1.png"
-        alt="The relevant code snippet from secretsdump."
-        width="800"
-        caption=""
-    >}}
-
-    The key flags here are:
-    - `NTDSAPI_CLIENT_GUID`: Identifies our host as a replication client to the DC.
-    - `DRS_EXT_GETCHGREQ_V6/V8`: Protocol version negotiation, supports both older (2003) and newer (2008+) DCs.
-    - `DRS_EXT_STRONG_ENCRYPTION`: Ensures AES-encrypted communication.
-
-2. **IDL_DRSGetNCChanges** (Replicating Data)
-
-    After the session is established, Secretsdump calls `DRSGetNCChanges` (including the `EXOP_REPL_OBJ` flag) for each user:
-
-    {{<figure 
-        src="/images/impacket-drsuapi-2.png"
-        alt="The relevant code snippet from secretsdump."
-        width="800"
-        caption=""
-    >}}
-
-    An interesting thing to note is that the `uuidDsaObjDest` and `uuidInvocIdSrc` variables are the GUIDs that identify the destination and source DC in the replication operation. Since we're not a real DC, secretsdump sets both to the target DC's GUID to make the request appear legitimate.
-
-3. **IDL_DRSUnbind** (Cleanup)
-
-    Interestingly, secretsdump doesn't explicitly call `DRSUnbind` in the code. The DRS handle is implicitly released when the script exits or the DC times out the session.
-
-Once secretsdump receives the encrypted attributes from the DC, it:
-1. Decrypts them using the session key from `DRSBind`.
-2. Formats the output (e.g., `username:rid:lmhash:nthash:::`).
-3. Writes to stdout or the specified output files.
 
 # VSS
 
-## Theory
+## The Problem
 
-The [Volume Shadow Copy Service](https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service) (VSS) method is a fundamentally different approach from DRSUAPI. The goal here is to:
-1. Access the DC locally
-2. Create a snapshot (a point-in-time copy) of its disk
-3. Copy NTDS and SYSTEM from that snapshot
-
-The issue here is that AD constantly uses NTDS and, as a result, it is always locked; VSS solves that problem.
+The [Volume Shadow Copy Service](https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service) (VSS) method (`-use-vss`) is a completely different approach from DCSync. The overall goal here is to create a copy of the NTDS. However, a file cannot be copied if it is actively being used. In an AD environment, `NTDS` is used 24/7, therefore, it is effectively always locked!
 
 {{<figure 
-    src="/images/spongebob-squarepants.gif"
-    alt="The character Spongebob saying 'Problem solved'."
-    width="300"
+    src="/images/ice-age-sid.gif"
+    alt="The character from the movie Ice Age saying 'Ohhhm. This is a problem'."
+    width="450"
     caption=""
 >}}
 
-Unlike DRSUAPI, which we need replication permissions (DA-level access), VSS requires just Local Administrator (or even Backup Operator) access to the DC. However, since this process involves disk I/O, it is slower than DRSUAPI. In addition, VSS makes a snapshot of the entire volume; it is not a targeted credential-grabbing like DRSUAPI.
-
-So why we would ever want to use the slower VSS method instead of DRSUAPI?, I hear you ask.
-
-The obvious answer is when we are not a DA but just an LA on a DC. Also, another use case could be that the required RPC ports for DRSUAPI are blocked, but SMB access is available.
-
-The VSS process looks like this:
-
-1. Create a shadow copy of the volumne contaings NTDS (e.g. a snapshot of the `C:\` drive).
-2. Access the snapshot via its kernel device path (something like `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\`).
-3. Copy NTDS (`Windows\NTDS\`) and SYSTEM (`Windows\System32\config\`) from the snapshot  to a target location (e.g. `\Temp`).
-4. Delete the snapshot.
-
-Like DRSUAPI, where we *kind of* mimicked the DC-to-DC replication process, here we *kind of* mimicking the VSS process.
-
-Because it is a native Windows process, it does automatically means that it's *stealthy*: the pattern of creating a shadow copy, immediately accessing NTDS, and then deleting the snapshot is a pretty clear indicator of credential dumping.
-
-<!-- {{<figure 
-    src="/images/i-think-its-obvious-kyle-broflovski.gif"
-    alt="The character Kyle from Southpark saying 'I think it's obvious'."
-    width="500"
-    caption=""
->}} -->
-
-## Secretsdump
-
-When we use secretsdump with the `-use-vss` flag, the execution path changes from the default DRSUAPI to VSS:
+VSS solves that problem: instead of trying to copy the locked file directly, it creates a snapshot (i.e., a read-only point-in-time copy) of the DC's entire volume (e.g. `C:\`). Within this snapshot, `NTDS` (and `SYSTEM`!) is no longer actively in use, meaning it is no longer locked, and, therefore, can be safely copied.
 
 {{<figure 
-    src="/images/impacket-use-vss.png"
-    alt="Secretsdump help menu explaining the -use-vss flag."
-    width="650"
+    src="/images/problem-solved-great.gif"
+    alt="The comedian Trevor Noah saying 'Problem solved'."
+    width="450"
     caption=""
 >}}
 
-1. **Remote Service Creation**
+It should be noted that the permission to create a shadow copy ([`SeBackupPrivilege`](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/security-policy-settings/back-up-files-and-directories)) is typically assigned only to [Administrators](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#administrators) and members of the [Backup Operators](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#backup-operators) or [Server Operators](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#server-operators) groups.
 
-    Secretsdump connects to the DC's **Service Control Manager (SCM)** (the Windows component that manages services) via RPC over SMB and starts the `RemoteRegistry` service. This service allows remote access to the registry, which is needed to extract the SYSTEM hive (containing the SYSKEY used to decrypt NTDS later):
+Let's see how the VSS process looks like.
 
-    {{<figure 
-        src="/images/impacket-vss-1.png"
-        alt="The relevant code snippet from secretsdump."
-        width="600"
-        caption=""
-    >}}
+## The (High-Level) VSS Process
 
-2. **Shadow Copy Creation**
+### 1. DC Access
 
-    Then, it executes `vssadmin` on the DC to create the volume snapshot. The command is executed remotely using one of several methods (`-exec-method` flag): creating a temporary service via SCM (default), using WMI, or other remote execution techniques:
+First, we need to access the DC; `secretsdump` does that by connecting to the DC's Service Control Manager (SCM) (the Windows component that manages services) via RPC over SMB and starting the [`RemoteRegistry`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-rrp/0fa3191d-bb79-490a-81bd-54c2601b7a78) service. As the name implies, this service allows remote access to the registry, which is needed to extract the `SYSTEM` hive:
 
-    {{<figure 
-        src="/images/impacket-vss-2.png"
-        alt="The relevant code snippet from secretsdump."
-        width="850"
-        caption=""
-    >}}
+{{<figure 
+    src="/images/impacket-vss-1.png"
+    alt="The relevant code snippet from secretsdump."
+    width="600"
+    caption=""
+>}}
 
-3. **File Extraction via SMB**
+### 2. Shadow Copy Creation 
 
-    Once the shadow copy exists, secretsdump accesses it via the `ADMIN$` share and uses SMB to copy both NTDS and SYSTEM from the snapshot to the target machine:
+Next, we need to create a shadow copy of the volume containing the `NTDS` (e.g. a snapshot of the `C:\` drive). To do that, `secretsdump` executes [`vssadmin`](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/vssadmin) on the DC, which (by default) creates a temporary service via SCM:
 
-    {{<figure 
-        src="/images/impacket-vss-3.png"
-        alt="The relevant code snippet from secretsdump."
-        width="600"
-        caption=""
-    >}}
+{{<figure 
+    src="/images/impacket-vss-2.png"
+    alt="The relevant code snippet from secretsdump."
+    width="850"
+    caption=""
+>}}
 
-4. **Shadow Copy Deletion**
+### 3. File Extraction via SMB
 
-    After copying the files, secretsdump deletes the shadow copy:
+To copy the target files (`NTDS` and `SYSTEM`), we need to access the snapshot via its kernel device path (e.g. `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\`). `secretsdump` does that via the `ADMIN$` share and uses SMB to copy both files from the snapshot to the target machine:
 
-    {{<figure 
-        src="/images/impacket-vss-4.png"
-        alt="The relevant code snippet from secretsdump."
-        width="400"
-        caption=""
-    >}}
+{{<figure 
+    src="/images/impacket-vss-3.png"
+    alt="The relevant code snippet from secretsdump."
+    width="600"
+    caption=""
+>}}
 
-Here's a handy recap:
+### 4. Shadow Copy Deletion
 
-| Aspect | DRSUAPI | VSS |
+After copying the files, the snapshot gets deleted:
+
+{{<figure 
+    src="/images/impacket-vss-4.png"
+    alt="The relevant code snippet from secretsdump."
+    width="400"
+    caption=""
+>}}
+
+# DCSync vs VSS
+
+Here is a handy table with the major differences between the two:
+
+| Aspect | DCSync | VSS |
 |---|---|---|
-| **Network protocol** | RPC (DRSUAPI calls) | RPC (SCM) + SMB (file transfer) |
-| **Data format** | Encrypted attributes in DRS responses | Raw ESE database file |
-| **Decryption** | Session key from DRSBind | SYSKEY from SYSTEM hive |
-| **Extraction granularity** | Per-user (can target specific accounts) | All-or-nothing (entire database) |
+| **Protocol(s)** | RPC (DRSUAPI calls) | RPC (SCM) + SMB (file transfer) |
+|**Permissions**| DA level or similar (e.g. `DC$`) | LA level or similar (e.g. Backup Operators) |
+| **Granularity** | Targeted (specific accounts) | Bulk (entire database) |
 | **Speed** | Fast (streaming data) | Slow (snapshot + file copy) |
-| **Disk footprint on DC** | None | Temporary shadow copy |
+| **Decryption** | Session key from `DRSBind` | `Syskey` from `SYSTEM` hive |
 
+As you can see, DCSync is the default method for a reason: it is fast, granular, and only uses RPC. So why would we ever want to use the slower, bulk VSS method, I hear you ask? 
 
-## NetExec as a Wrapper
+A scenario that VSS could be useful is when we don't have replication permissions, but we are an LA on a DC or we have Backup/Server Operators membership. Another scenario is when the RPC ports required for DCSync are blocked but SMB access is still available.
 
-NetExec makes heavy use of Impacket scripts and its [`smb.py`](https://github.com/Pennyw0rth/NetExec/blob/main/nxc/protocols/smb.py) script, which includes the NTDS extraction module, is no different.
+Both of these scenarios don't really apply to the password audit process, but it is never bad to have a backup method!
 
-The [`--ntds`](https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit?q=raw-ntds-copy#dump-all-users-from-the-ntds.dit) flag is simply a wrapper around Impacket's `secretsdump`. In brief, it imports `NTDSHashes` from secretsdump and calls it with `useVSSMethod=False`, triggering its DRSUAPI code path. This is identical to running `secretsdump.py -just-dc` directly.
+# Secretsdump
 
-{{<figure 
-    src="/images/nxc-drsuapi-1.png"
-    alt="The relevant code snippet from netexec's smb.py script."
-    width="500"
-    caption=""
->}}
-
-{{<figure 
-    src="/images/nxc-drsuapi-2.png"
-    alt="The relevant code snippet from netexec's smb.py script."
-    width="300"
-    caption=""
->}}
-
-Just like DRSUAPI, NetExec also includes the [`--ntds vss`](https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit?q=raw-ntds-copy#dump-all-users-from-the-ntds.dit) flag, which simply sets `useVSSMethod=True` and triggers the VSS path:
-
-{{<figure 
-    src="/images/nxc-drsuapi-3.png"
-    alt="The relevant code snippet from netexec's smb.py script."
-    width="500"
-    caption=""
->}}
-
-<!--
-
-### Practical Features (DRSUAPI + VSS)
+Most of us use `secretsdump` directly or indirectly (e.g. via wrappers like [NetExec](https://www.netexec.wiki/)). But, if you are like me, there is a good chance that you don't make full use of its functionality. So I thought that it might be useful to list out some potentially underused flags for reference:
 
 |Flag|Description|
 |---|---|
-|`just-dc`|Extracts only NTDS.DIT data (NTLM hashes and Kerberos keys).|
-|`-just-dc-ntlm`|Extracts only NTLM hashes. Faster for large domains.|
-|`-just-dc-user`|Extracts credentials for a specific user only.|
-|`-history`|Includes password history entries using the `ntPwdHistory` and `lmPwdHistory` attributes.|
-|`-resumefile`|Tracks progress by recording the last successfully processed user SID. If extraction is interrupted, subsequent runs can resume from the last checkpoint rather than starting over.|
-|`-outputfile`|Generates multiple files containing different credential types: `.ntds` (NTLM hashes), `.ntds.cleartext` (cleartext passwords), `.ntds.kerberos` (Kerberos keys), `.sam` (SAM database hashes), `.secrets` (LSA secrets, cached credentials, and machine account passwords).|
-|`-pwd-last-set`|Displays when each password was last changed based on the `pwdLastSet` attribute.|
-|`-user-status`|Show whether accounts are enabled, disabled, or locked.|
+|`just-dc`|Extracts only `NTDS` data, i.e., NTLM hashes and Kerberos keys.|
+|`-just-dc-ntlm`|Extracts only NTLM hashes, faster for large domains. Do we even need Kerberos keys?|
+|`-just-dc-user`|Extracts credentials for a target user, can be useful for validation.|
+|`-history`|Includes the [`ntPwdHistory`](https://learn.microsoft.com/en-us/windows/win32/adschema/a-ntpwdhistory) and [`lmPwdHistory`](https://learn.microsoft.com/en-us/windows/win32/adschema/a-lmpwdhistory) attributes, useful for checking patterns.|
+|`-resumefile`|Tracks progress by recording the last successfully processed user's SID. If extraction is interrupted, subsequent runs can resume from the last checkpoint rather than starting over. Who wants to start over?|
+|`-outputfile`|Generates `.ntds` (NTLM hashes), `.ntds.cleartext` (cleartext passwords), `.ntds.kerberos` (Kerberos keys), `.sam` (SAM database hashes), `.secrets` (LSA secrets, cached credentials, and machine account passwords). Organisation is key!|
+|`-pwd-last-set`|When each password was last changed based on the [`pwdLastSet`](https://learn.microsoft.com/en-us/windows/win32/adschema/a-pwdlastset) attribute, again, useful for checking patterns.|
+|`-user-status`|Show whether accounts are enabled, disabled, or locked. Do we even need disabled accounts on our data?|
 
 > TO-CHECK: `user-status` is binary (enabled/disabled) or includes locked?
 
+# Honorable Mention
 
-### Practical Features (VSS)
+As we now know, `secretsdump`'s DCSync uses a multi-protocol approach that requires both SMB (authentication) and RPC (DRSUAPI calls) access. In addition, when Kerberos is used, we need to have the `CIFS/domaincontroller` SPN.
 
-The VSS method supports most of the same flags as DRSUAPI mode, plus one more:
+Let's say that SMB access is blocked and VSS cannot be used as an alternative. In this case, we can use LDAP! [Mimikatz](https://github.com/gentilkiwi/mimikatz)'s DCSync implementation uses LDAP for the authentication part and then, like `secretsdump`, RPC for the DRSUAPI calls.
 
-| Flag | VSS Support | Notes |
-|---|---|---|
-| `-exec-method` | ⚠️ VSS-specific | Choose how to execute remote commands: `smbexec`, `wmiexec`, `mmcexec` (default: `smbexec`) |
+However, for most internal assessments, this distinction is just a good to know thing; all required ports are typically available.
 
-**Additional VSS-specific considerations:**
-
-```bash
-# Specify custom execution method (useful if SMB is restricted)
-secretsdump.py 'DOMAIN/username:password@<DC_IP>' -use-vss -exec-method wmiexec
-
-# VSS extraction with NTLM hash (no Kerberos issues!)
-secretsdump.py -hashes :8846f7eaee8fb117ad06bdd830b7586c 'DOMAIN/username@<DC_IP>' -use-vss
-```
-
-Secretsdump uses a multi-protocol approach that requires both SMB and RPC access. The tool first establishes an SMB connection (TCP 445) for authentication and initial enumeration, then performs the actual DCSync operation using the DRSUAPI protocol over RPC. This SMB-first behavior has practical implications for network-restricted environments.
-
-When using Kerberos authentication, secretsdump requires the `CIFS/domaincontroller` SPN to establish the initial SMB session:
-
-```python
-rpc.set_smb_connection(self.__smbConnection)
-```
-
-If we're operating in an environment where SMB is restricted or blocked but LDAP remains available, secretsdump may fail where pure LDAP-based methods succeed. This is the key distinction between secretsdump and Mimikatz's DCSync implementation. Mimikatz uses LDAP for its initial authentication and connection establishment, then proceeds to DRSUAPI for the credential extraction. This LDAP-based approach allows Mimikatz to function in environments where SMB access is restricted, while secretsdump's SMB dependency can become a limiting factor. For most password audit engagements, this distinction is academic since both SMB and LDAP are typically accessible to Domain Admin credentials.
-
-Using `-just-dc-ntlm` restricts extraction to NTLM hashes only, significantly reducing both processing time and network bandwidth. For comprehensive password audits requiring Kerberos keys and cleartext passwords, omitting this flag ensures complete credential material extraction.
-
-## DCSync via Mimikatz
-
-Mimikatz's DCSync module performs the same Directory Replication Service operations as secretsdump, but with a pure LDAP-based approach. Unlike Impacket's SMB-first methodology, Mimikatz doesn't require CIFS SPNs or SMB access, which can be advantageous in certain network configurations.
-
-The command for complete credential extraction is:
-
-```bash
-lsadump::dcsync /domain:targetdomain.com /all /csv
-```
-
-For targeting specific high-value accounts:
-
-```bash
-lsadump::dcsync /domain:targetdomain.com /user:Administrator
-```
-
-The LDAP-only operation works well in environments where SMB faces additional restrictions. Mimikatz displays hashes immediately in real-time output without creating intermediate files, which can be useful for quick verification. The selective extraction capability allows us to target specific accounts when we need rapid confirmation of particular credentials before committing to a full NTDS extraction.
-
-However, Mimikatz requires execution on a Windows host, typically accessed via RDP or WinRM. The output requires parsing if we need standardized file formats compatible with our cracking tools, as the default console output isn't optimized for direct ingestion into Hashcat or John the Ripper.
-
-
-# Common Issues and Troubleshooting
-
-## Incomplete Hash Extraction
-
-Comparing hash counts against expected user counts provides quick validation. We can verify the approximate user count with `net user /domain` and compare against the number of hashes extracted. Significant discrepancies warrant re-running the extraction and comparing outputs for consistency.
-
--->
+|Command|Description|
+|---|---|
+|`lsadump::dcsync /domain:mollysec.local /all /csv`|Complete extraction.|
+|`lsadump::dcsync /domain:mollysec.local /user:Administrator`|Targeted extraction.|
 
 **Next:** [Password Audits Part 2: Hash Organization →](/posts/password-audits-part-2/)

@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Password Audits Part 1: NTDS Extraction | mollysec</title>
 <meta name="keywords" content="">
-<meta name="description" content="How is really NTDS extracted?">
+<meta name="description" content="NTDS extraction in practice: DCSync vs VSS">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/password-audits-part-1/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.d96a8946d22452f752dffb214c0167ff2e93dc42eab51e40fc67620b9e047820.css" integrity="sha256-2WqJRtIkUvdS3/shTAFn/y6T3ELqtR5A/GdiC54EeCA=" rel="preload stylesheet" as="style">
@@ -120,15 +120,9 @@
     
     <h1 class="post-title entry-hint-parent">
       Password Audits Part 1: NTDS Extraction
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
     </h1>
     <div class="post-description">
-      How is really NTDS extracted?
+      NTDS extraction in practice: DCSync vs VSS
     </div>
     <div class="post-meta">
 
@@ -137,88 +131,115 @@
 </div>
   </header> 
   <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
-<p>I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internal assessments. The latter consists of many parts; one of them is assessing the passwords used within the domain (what we call a Password Audit). This can be summed up as follows:</p>
+<blockquote>
+<p>This article is about <strong>pentesting</strong>, not red teaming. We are given a DA account to extract NTDS, we don&rsquo;t need to be <em>stealthy</em> or anything of that sort. Therefore, <strong>OPSEC considerations out of scope</strong>.</p>
+</blockquote>
+<p>I recently went from just testing (close-to-zero-functionality) web apps and APIs to doing more varied stuff, including internal assessments. An internal test consists of many different parts, one of which is assessing the passwords used within the domain (what we call a password audit).</p>
+<p>This can be summed up as follows:</p>
 <hr>
 <p><strong>Extract NTDS</strong> → Clean/Organise NTDS → Recover NTDS → Generate stats.</p>
 <hr>
-<p>The process sounds simple, and it really is pretty straightforward, for normal people. But I am not one of those people; one of my greatest joys in life is to overcomplicate the simple things.</p>
-<p>So, buckle up. Or don&rsquo;t really.</p>
-<p>My goal here is to simply dip my toes just one-level deeper that what I encounter in my day-to-day life; nothing more than that. Don&rsquo;t expect deep-diving on Microsoft protocols, analysing every line code of Secretsdump, or listing every possible NTDS extraction method.</p>
-<p>None of that, just simple, daily stuff!</p>
+<p>The process sounds simple, and, for normal people, it really is. But I am not one of those people; one of my greatest joys in life is to overcomplicate the simple things. So, buckle up (or don&rsquo;t, really)!</p>
+<p>The goal of this article is to simply dip my toes one level deeper into what I encounter during the password audit process. Don&rsquo;t expect a deep dive into Microsoft protocols, listing every possible NTDS extraction method, or doing fancy password attacks. We are here for the simple, boring, daily stuff!</p>
+<p>I will (selfishly) try to break down this process into four parts with the goal of improving my life by understanding what I am doing a tiny bit better. Most courses demonstrate how to use <a href="https://github.com/hashcat/hashcat">hashcat</a> or <a href="https://github.com/openwall/john">JtR</a> to crack hashes, but even the most thorough ones, the likes of <a href="https://academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist">CPTS</a>, <a href="https://certifications.tcm-sec.com/pnpt/">PNPT</a>, and <a href="https://academy.hackthebox.com/preview/certifications/htb-certified-active-directory-pentesting-expert">CAPE</a>, never touch on a topic like this.</p>
+<p>So I thought, since I will spend some time &ldquo;researching&rdquo; this topic anyway, why not write a short article about it? So I did.</p>
 <h1 id="tldr-on-ntds">TL;DR on NTDS<a hidden class="anchor" aria-hidden="true" href="#tldr-on-ntds">#</a></h1>
-<p>As you probably know already, passwords are stored server side in databases in a strange-looking format called a hash. In an Active Directory (AD) environment, this database is called <a href="https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782">NT Directory Services Directory Information Tree</a> (<code>NTDS.dit</code>) and is located within the Key Distribution Centre (KDC).</p>
+<p>As you probably know already, passwords are stored server-side in databases in a strange-looking format called a hash. In an Active Directory (AD) environment, this database is called <a href="https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/mcm-core-active-directory-internals/1785782">NT Directory Services Directory Information Tree</a> (<code>NTDS.dit</code>) and is located within the Key Distribution Centre (KDC).</p>
 <figure>
     <img loading="lazy" src="/images/hash-process.png"
          alt="A user types his password, the password transforms into a hash, which is then compared with the one stored in the database." width="900"/> 
 </figure>
 
-<p>It is worth noting that NTDS is encrypted, therefore, unusable by itself (shoot!). However, the SYSTEM registry hive has the encryption key, aka <code>SYSKEY</code> (phew!). So we need both the NTDS and the SYSKEY in order to decrypt the former and get the hashes.</p>
-<p>Also it might be worth clarifying that I am talking about pentesting here, not <em>red teaming</em> or <em>hacking</em>. We are given a Domain Admin (DA) account from the client right away and the client expects us to pull the NTDS, so we don&rsquo;t need to be <em>silent</em>. As a result, OPSEC considerations are out of scope.</p>
-<p>Since we don&rsquo;t need to <em>hack</em> our way into DA, our goal is to get the NTDS <strong>as complete and as fast as possible</strong>. The process is typically done remotely from a Kali host, so I will focus on two approaches: DSRUAPI and VSS.</p>
-<p>If those acronyms don&rsquo;t ring a bell, worry not; I am certain that you have used them multiple times already and it just happened to don&rsquo;t know it yet.</p>
-<h1 id="drsuapi">DRSUAPI<a hidden class="anchor" aria-hidden="true" href="#drsuapi">#</a></h1>
-<p>As there are typically many Domain Controllers (DCs) within a domain, it makes sense for every DC to have a copy of the NTDS. Otherwise, it would get messy really quick! This is done via a process called <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations">Replication</a>, which helps keeping every DC in sync with each other.</p>
-<p>This process happens on regular intervals via the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47">Directory Replication Service Remote Protocol (MS-DRSR)</a>. DRSUAPI is one of the two RPC interfaces of DRS and, as I get it, stands for three things:</p>
+<p><code>NTDS</code> is encrypted and, therefore, unusable (for our purposes) by itself. To decrypt it, we need the encryption key, also known as Boot Key or <a href="https://learn.microsoft.com/en-us/windows-server/security/kerberos/system-key-utility-technical-overview"><code>Syskey</code></a> from the <a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc781906(v=ws.10)#hive-files"><code>SYSTEM</code></a> registry hive. As you will see later, this detail is relevant to the VSS method.</p>
+<p>The NTDS extraction process is typically done remotely from a Kali host and it comes down to two methods: DCSync (default) and VSS (<code>-use-vss</code>). The plan is to see what these approaches are (at a high-level) and how <a href="https://github.com/fortra/impacket/blob/master/examples/secretsdump.py"><code>secretsdump</code></a> implements them.</p>
+<p>Let&rsquo;s start with the default one.</p>
+<h1 id="dcsync-via-drsuapi">DCSync (via DRSUAPI)<a hidden class="anchor" aria-hidden="true" href="#dcsync-via-drsuapi">#</a></h1>
+<h2 id="replication">Replication<a hidden class="anchor" aria-hidden="true" href="#replication">#</a></h2>
+<p>As there are typically many Domain Controllers (DCs) within a domain, it makes sense for every DC to have a copy of the NTDS. Otherwise, it would get messy real quick!</p>
+<p>This is done via the <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/get-started/replication/active-directory-replication-concepts?source=recommendations">Replication</a> process, which is how DCs are keeping in sync with each other. This process happens on regular intervals through the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/f977faaa-673e-4f66-b9bf-48c640241d47">Directory Replication Service Remote Protocol (MS-DRSR)</a>.</p>
+<p>DRSUAPI is one of the two RPC interfaces of DRS and, as I get it, its name is a combination of three things:</p>
 <ol>
 <li>DRS → the Directory Replication Service remote protocol</li>
 <li>U → the fact that DRS is used to update (i.e., sync) the DCs</li>
-<li>API → the Microsoft Application Programming Interface that is used to implement the above</li>
+<li>API → the Application Programming Interface that is used to implement this update</li>
 </ol>
-<p>DRSUAPI (or DCSync) is the default method of <code>secretsdump</code> (and therefore its wrappers, e.g. <code>netexec</code>). The goal is simple:</p>
-<ol>
-<li>Let our host impersonate a DC</li>
-<li>Then ask a real DC to sync with our host</li>
-</ol>
+<p>DCSync abuses the assumption that certain permissions (more on that later) are only granted to highly trusted entities (like DCs). It kind of &ldquo;impersonates&rdquo; a DC and then asks a real DC to sync with us.</p>
 <figure>
     <img loading="lazy" src="/images/look-at-me-i-am-the-dc-now.png"
          alt="A meme saying: &#39;Look at me, I am the DC now&#39;." width="500"/> 
 </figure>
 
-<p>This is because DRSUAPI includes the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894"><code>IDL_DRSGetNCChanges</code></a> function which is a part of the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410"><code>IDL_DRS</code></a> methods. We will dig more into that later.</p>
-<p>Obviously, not everyone can ask a DC for data, that would be <a href="https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit">glaikit</a>. But DAs have the permissions to do it, more specifically, the <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes">Replicating Directory Changes</a> and <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all">Replicating Directory Changes All</a>. We will see why we need both of them soon.</p>
-<blockquote>
-<p><a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-in-filtered-set">Replicating Directory Changes In Filtered Set</a> might also be needed when dealing with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/rodc-and-active-directory-schema">RODC</a>, but that had never happened to me during my extensive three months-career doing internal testing.</p>
-</blockquote>
-<p>When we run Impacket&rsquo;s <code>secretsdump.py</code> (or NetExec&rsquo;s <code>--ntds</code>), we are triggering a sequence of DRS calls:</p>
-<ol>
-<li>
-<p><strong>IDL_DRSBind</strong> (The Handshake)</p>
-<p>Before we can request anything, we first need to establish a connection with the DC. This method creates a <code>DRS_HANDLE</code> (kind of a session token) that proves we&rsquo;ve successfully authenticated and are authorised to make replication requests. This handle remains valid for all subsequent operations until we explicitly call <code>IDL_DRSUnbind</code> or the server invalidates it (e.g., due to timeout or errors).</p>
-<p>When a tool fails with a <code>bind failed</code> error, something has gone wrong here.</p>
-</li>
-<li>
-<p><strong>IDL_DRSGetNCChanges</strong> (Replicating Data)</p>
-<p>This is the function that actually replicates directory data from the DC to our host. To call this function we need the <strong>Replicating Directory Changes</strong> permission. However, just calling <code>IDL_DRSGetNCChanges</code> only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials.</p>
-<p>To get the actual credentials, we need to include the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813"><code>EXOP_REPL_SECRETS</code></a> flag. In order to do that, we need the <strong>Replicating Directory Changes All</strong> permission.</p>
-<p>Now you know why we need both permissions!</p>
+<p>You might be wondering: <em>How does our host impersonate a DC?</em></p>
+<p>The short answer is: it doesn’t. The (legit) DC exposes the replication functionality (via DRSUAPI) to any authenticated client that has the appropriate permissions; it never verifies whether the client is a DC or not.</p>
+<p>The reality is that we don&rsquo;t actually want to fully impersonate a DC anyway. The actual DC-to-DC replication process has some protections in place: communication is typically performed using <a href="https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview">Kerberos</a>, with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos">mutual authentication</a> (so both sides verify who they&rsquo;re talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy">encryption</a> (so the exchanged data stays safe in transit).</p>
+<p>As an example, if we were fully impersonating a DC, we probably wouldn&rsquo;t be able to use NTLM authentication (<code>-hashes</code>). We are able to do so because when a non-DC host connects to a DC, the latter couldn&rsquo;t give a <a href="https://www.dota2.com/hero/puck">puck</a> about enforcing secure communication; as long as we have the right permissions, we can simply call the DRSUAPI replication interface.</p>
+<p>DCSync leverages the legit replication process, while bypassing the assumptions those protections rely on!</p>
 <figure>
-        <img loading="lazy" src="/images/makes-sense-fallon.gif"
-             alt="A meme showing Jimmy Fallon undestanding something." width="400"/> 
-    </figure>
+    <img loading="lazy" src="/images/dahliabunni-like-a-boss.gif"
+         alt="An image of Holywood actors singing &#39;Like a boss&#39;." width="500"/> 
+</figure>
 
-</li>
-<li>
-<p><strong>IDL_DRSUnbind</strong> (Cleanup)</p>
-<p>Once we&rsquo;ve replicated what we need, my assumption was that well-behaved tools would call <code>IDL_DRSUnbind</code> to explicitly close the connection and release the <code>DRS_HANDLE</code>; however, that was not the case.</p>
-</li>
-</ol>
-<p>It&rsquo;s the fastest one as it avoids disk I/O entirely; all data is transmitted over the network via RPC (TCP 135) and dynamic high ports (TCP 49152-65535). If you are using this and it&rsquo;s failing for no apparent reason, check if those RPC ports are blocked!</p>
-<p>Some questions might have surfaced through your mind by now:</p>
+<p>At first glance, the fact that the DC does not verify that the client is also a DC might seem like a major security gap. However, the replication process needs to be used by more systems than just DCs, such as backup tools and monitoring software, so, it cannot realistically be restricted to just them.</p>
+<p>It is also worth noting that when Kerberos is used as the authentication method, the client constructs a very <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f">specific Service Principal Name (SPN)</a> for the replication service, which looks like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/&lt;target DC GUID&gt;/&lt;domain&#39;s fully qualified domain name (FQDN)&gt;
+</span></span><span style="display:flex;"><span>         └─ Fixed DRS interface GUID (same for every DC)
+</span></span></code></pre></div><p>For example, if we are requesting data for the <code>MOLLYSEC.LOCAL</code> domain from <code>DC01</code> (with a GUID of <code>f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14</code>), the SPN would look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14/mollysec.local
+</span></span></code></pre></div><p>When we see Kerberos errors, like <code>KDC_ERR_S_PRINCIPAL_UNKNOWN</code>, it often means something is not right with this SPN. This is why specifying a DC by its IP address can cause authentication problems; the SPN expects a proper FQDN (falling back to NTLM authentication, e.g. using <code>-hashes</code>, often works around the problem).</p>
+<p>Obviously, not everyone can ask a DC for data, that would be <a href="https://www.visitscotland.com/things-to-do/attractions/arts-culture/scottish-languages/scots-words-meanings#glaikit">glaikit</a>. However, <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#administrators">Domain Admins</a> (and DCs of course!) have the following two required permissions:</p>
 <ul>
-<li>
-<p><em>Didn&rsquo;t we say that DCSync mimics DC-to-DC replication? But our attacking machine isn&rsquo;t a DC, right?</em></p>
-<p>Here&rsquo;s the thing: legitimate DCs only talk through Kerberos with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos">mutual authentication</a> (so both sides verify who they&rsquo;re
-talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy">encrypted traffic</a> (so the exchanged data stays safe in transit). We want to use the legitimate DC-to-DC sync process, but we don&rsquo;t want the security protections that come with it.</p>
-</li>
-<li>
-<p><em>But if the DCSync process only uses Kerberos, how can we use NTLM hashes (e.g. <code>secretsdump.py -hashes</code>)?</em></p>
-<p>Well, here&rsquo;s the interesting part: when a <strong>non-DC host</strong> connects to a DC, the DC couldn&rsquo;t give a <a href="https://www.dota2.com/hero/puck">puck</a> about mutual authentication and encryption; it accepts both Kerberos and NTLM authentication. The DC will only check if our account has the replication permissions.</p>
-</li>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes">Replicating Directory Changes</a></li>
+<li><a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all">Replicating Directory Changes All</a></li>
 </ul>
+<p>Why we need both, will become clear soon.</p>
+<blockquote>
+<p><em><a href="https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-in-filtered-set">Replicating Directory Changes In Filtered Set</a> might also be needed when dealing with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/rodc-and-active-directory-schema">RODC</a>, but that had never happened to me during my extensive three months-career doing internal testing.</em></p>
+</blockquote>
+<h2 id="the-high-level-dcsync-process">The (High-Level) DCSync Process<a hidden class="anchor" aria-hidden="true" href="#the-high-level-dcsync-process">#</a></h2>
+<p>Before we can request anything, we first need to authenticate. When we do, the underlying authentication process (Kerberos or NTLM) establishes a <strong>session key</strong>. This key is used to encrypt and sign all subsequent communication with the DC.</p>
+<p>When we run <code>secretsdump</code>, we are essentially triggering a sequence of <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/58f33216-d9f1-43bf-a183-87e3c899c410"><code>IDL_DRS</code></a> calls. The three core ones are described below.</p>
+<h3 id="1-the-handshake-idl_drsbind">1. The Handshake (IDL_DRSBind)<a hidden class="anchor" aria-hidden="true" href="#1-the-handshake-idl_drsbind">#</a></h3>
+<p>As per Microsoft:</p>
+<blockquote>
+<p><em><a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/605b1ea1-9cdc-428f-ab7a-70120e020a3d"><code>IDL_DRSBind</code></a> creates a context handle that is necessary to call any other method in this interface.</em></p>
+</blockquote>
+<p>The context handle (<a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/55fed7de-17f5-4ff3-8c53-866df925056a"><code>DRS_HANDLE</code></a>) is similar to a session cookie; it proves that we&rsquo;ve successfully authenticated and are authorised to make replication requests. It remains valid for all subsequent operations until we explicitly call <code>IDL_DRSUnbind</code> or the server invalidates it (e.g., due to timeout or errors).</p>
+<p>When a tool fails with a <code>bind failed</code> error, something has gone wrong in this step!</p>
+<p>So the handle acts as a session identifier for the API, while the session key protects the data exchanged within it. <code>secretsdump</code> establishes a DRS session with the DC via the <code>DRSBind</code> method:</p>
+<figure>
+    <img loading="lazy" src="/images/impacket-drsuapi-1.png"
+         alt="The relevant code snippet from secretsdump." width="800"/> 
+</figure>
+
+<h3 id="2-replicating-data-idl_drsgetncchanges">2. Replicating Data (IDL_DRSGetNCChanges)<a hidden class="anchor" aria-hidden="true" href="#2-replicating-data-idl_drsgetncchanges">#</a></h3>
+<p>This is the function that actually replicates directory data from the DC to our host.</p>
+<p>To call this function we need the Replicating Directory Changes permission (1/2). However, just calling <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894"><code>IDL_DRSGetNCChanges</code></a> only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials.</p>
+<p>To get the actual credentials, we need to include the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813"><code>EXOP_REPL_SECRETS</code></a> flag. In order to do that, we need the Replicating Directory Changes All permission (2/2).</p>
+<figure>
+    <img loading="lazy" src="/images/now-were-on-the-same-page-joe-dirt.gif"
+         alt="A image of an actor saying &#39;Now we&#39;re on the same page&#39;." width="550"/> 
+</figure>
+
+<p>So after <code>secretsdump</code> has established the session and has the handle going, as we would expect, it calls <code>DRSGetNCChanges</code> along with the <code>EXOP_REPL_OBJ</code> flag:</p>
+<figure>
+    <img loading="lazy" src="/images/impacket-drsuapi-2.png"
+         alt="The relevant code snippet from secretsdump." width="800"/> 
+</figure>
+
+<p>The <code>uuidDsaObjDest</code> and <code>uuidInvocIdSrc</code> variables normally represent the destination and source DCs participating in the replication operation. Since our host is not a real DC, <code>secretsdump</code> cheekily sets both values to the target DC&rsquo;s GUID to make the request appear legitimate.</p>
+<h3 id="3-the-cleanup-idl_drsunbind">3. The Cleanup (IDL_DRSUnbind)<a hidden class="anchor" aria-hidden="true" href="#3-the-cleanup-idl_drsunbind">#</a></h3>
+<p>Once we&rsquo;ve replicated what we need, my assumption was that <code>secretsdump</code> would call <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/49eb17c9-b6a9-4cea-bef8-66abda8a7850"><code>IDL_DRSUnbind</code></a> to explicitly close the connection and release the <code>DRS_HANDLE</code>. However, I could not find any indication that this function is called within the script. Once again, it seems that my assumption was wrong!</p>
+<figure>
+    <img loading="lazy" src="/images/wrong-not.gif"
+         alt="An image of President Trump saying the word &#39;Wrong&#39;." width="500"/> 
+</figure>
+
+<h2 id="replication-vs-dcsync">Replication vs DCSync<a hidden class="anchor" aria-hidden="true" href="#replication-vs-dcsync">#</a></h2>
+<p>Although OPSEC considerations are out of scope, it is worth noting that there are some major behavioural differences between the replication process and DCSync. Some of them are listed below.</p>
 <table>
   <thead>
       <tr>
-          <th>Legit DC Replication</th>
+          <th>Replication</th>
           <th>DCSync</th>
       </tr>
   </thead>
@@ -229,181 +250,94 @@ talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/inte
       </tr>
       <tr>
           <td>Updates replication metadata to track sync state</td>
-          <td>Doesn&rsquo;t update any replication metadata</td>
+          <td>Doesn&rsquo;t do any of that</td>
       </tr>
       <tr>
-          <td>Happens continuously in the background between DCs</td>
-          <td>One-time operation initiated by us</td>
+          <td>Ongoing background process between DCs</td>
+          <td>One-time operation initiated by a non-DC host</td>
       </tr>
       <tr>
-          <td>Requests everything (objects, attributes, metadata, etc.)</td>
-          <td>Only requests credential-related attributes</td>
+          <td>Requests everything (objects, attributes, etc.)</td>
+          <td>Requests just credential-related attributes</td>
       </tr>
   </tbody>
 </table>
-<p>Another thing to point out is that when our tool of choice connects to a DC for replication, it constructs a very <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f">specific SPN</a>:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>General format:
-</span></span><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/&lt;target DC GUID&gt;/&lt;domain FQDN&gt;
-</span></span><span style="display:flex;"><span>         └─ Fixed DRS interface GUID (same for every DC)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>Example:
-</span></span><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/f8a7c3d2-4b9e-4a1f-9d6c-2e5f8b3a7c14/mollysec.local
-</span></span></code></pre></div><p>When we see Kerberos errors, like <code>KDC_ERR_S_PRINCIPAL_UNKNOWN</code>, it often means something is wrong with this SPN. As I&rsquo;m sure, we&rsquo;ve all experienced, this is why specifying a DC by its IP address can cause authentication problems; the SPN expects a proper FQDN. Falling back to NTLM authentication (using <code>-hashes</code>) often works around the problem.</p>
-<figure>
-    <img loading="lazy" src="/images/fqdn-kerberos.png"
-         alt="A meme highlighting the common issue of neglecting to use Fully Qualified Domain Names (FQDNs) when using Kerberos." width="500"/> 
-</figure>
-
-<p>Enough theory for now; let&rsquo;s see <code>secretsdump.py</code>&rsquo;s DCSync implementation.</p>
-<h2 id="secretsdump">Secretsdump<a hidden class="anchor" aria-hidden="true" href="#secretsdump">#</a></h2>
-<blockquote>
-<p>Why don&rsquo;t we extract the LA&rsquo;s from the DCs???</p>
-</blockquote>
-<p>Impacket&rsquo;s <a href="https://github.com/fortra/impacket/blob/master/impacket/examples/secretsdump.py">secretsdump.py</a> performs a DCSync operation by default:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>secretsdump.py MOLLYSEC.LOCAL/molly:Pass123@192.168.1.5
-</span></span></code></pre></div><p>Let&rsquo;s see how secretsdump implements the three-step DRSUAPI process that we are now experts on:</p>
+<p>Now that we are DCSync experts, let&rsquo;s see what VSS is about.</p>
 <figure>
     <img loading="lazy" src="/images/youre-dealing-with-an-expert-professional.gif"
-         alt="A meme of a soldier ironically saying &#39;You are dealing witht an expert&#39;." width="500"/> 
+         alt="A meme of a soldier ironically saying &#39;You are dealing with an expert&#39;." width="500"/> 
 </figure>
 
-<ol>
-<li>
-<p><strong>IDL_DRSBind</strong> (The Handshake)</p>
-<p>Secretsdump establishes a DRS session with the DC via the <code>DRSBind</code> method by negotiating capabilities:</p>
-<figure>
-        <img loading="lazy" src="/images/impacket-drsuapi-1.png"
-             alt="The relevant code snippet from secretsdump." width="800"/> 
-    </figure>
-
-<p>The key flags here are:</p>
-<ul>
-<li><code>NTDSAPI_CLIENT_GUID</code>: Identifies our host as a replication client to the DC.</li>
-<li><code>DRS_EXT_GETCHGREQ_V6/V8</code>: Protocol version negotiation, supports both older (2003) and newer (2008+) DCs.</li>
-<li><code>DRS_EXT_STRONG_ENCRYPTION</code>: Ensures AES-encrypted communication.</li>
-</ul>
-</li>
-<li>
-<p><strong>IDL_DRSGetNCChanges</strong> (Replicating Data)</p>
-<p>After the session is established, Secretsdump calls <code>DRSGetNCChanges</code> (including the <code>EXOP_REPL_OBJ</code> flag) for each user:</p>
-<figure>
-        <img loading="lazy" src="/images/impacket-drsuapi-2.png"
-             alt="The relevant code snippet from secretsdump." width="800"/> 
-    </figure>
-
-<p>An interesting thing to note is that the <code>uuidDsaObjDest</code> and <code>uuidInvocIdSrc</code> variables are the GUIDs that identify the destination and source DC in the replication operation. Since we&rsquo;re not a real DC, secretsdump sets both to the target DC&rsquo;s GUID to make the request appear legitimate.</p>
-</li>
-<li>
-<p><strong>IDL_DRSUnbind</strong> (Cleanup)</p>
-<p>Interestingly, secretsdump doesn&rsquo;t explicitly call <code>DRSUnbind</code> in the code. The DRS handle is implicitly released when the script exits or the DC times out the session.</p>
-</li>
-</ol>
-<p>Once secretsdump receives the encrypted attributes from the DC, it:</p>
-<ol>
-<li>Decrypts them using the session key from <code>DRSBind</code>.</li>
-<li>Formats the output (e.g., <code>username:rid:lmhash:nthash:::</code>).</li>
-<li>Writes to stdout or the specified output files.</li>
-</ol>
 <h1 id="vss">VSS<a hidden class="anchor" aria-hidden="true" href="#vss">#</a></h1>
-<h2 id="theory">Theory<a hidden class="anchor" aria-hidden="true" href="#theory">#</a></h2>
-<p>The <a href="https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service">Volume Shadow Copy Service</a> (VSS) method is a fundamentally different approach from DRSUAPI. The goal here is to:</p>
-<ol>
-<li>Access the DC locally</li>
-<li>Create a snapshot (a point-in-time copy) of its disk</li>
-<li>Copy NTDS and SYSTEM from that snapshot</li>
-</ol>
-<p>The issue here is that AD constantly uses NTDS and, as a result, it is always locked; VSS solves that problem.</p>
+<h2 id="the-problem">The Problem<a hidden class="anchor" aria-hidden="true" href="#the-problem">#</a></h2>
+<p>The <a href="https://learn.microsoft.com/en-us/windows-server/storage/file-server/volume-shadow-copy-service">Volume Shadow Copy Service</a> (VSS) method (<code>-use-vss</code>) is a completely different approach from DCSync. The overall goal here is to create a copy of the NTDS. However, a file cannot be copied if it is actively being used. In an AD environment, <code>NTDS</code> is used 24/7, therefore, it is effectively always locked!</p>
 <figure>
-    <img loading="lazy" src="/images/spongebob-squarepants.gif"
-         alt="The character Spongebob saying &#39;Problem solved&#39;." width="300"/> 
+    <img loading="lazy" src="/images/ice-age-sid.gif"
+         alt="The character from the movie Ice Age saying &#39;Ohhhm. This is a problem&#39;." width="450"/> 
 </figure>
 
-<p>Unlike DRSUAPI, which we need replication permissions (DA-level access), VSS requires just Local Administrator (or even Backup Operator) access to the DC. However, since this process involves disk I/O, it is slower than DRSUAPI. In addition, VSS makes a snapshot of the entire volume; it is not a targeted credential-grabbing like DRSUAPI.</p>
-<p>So why we would ever want to use the slower VSS method instead of DRSUAPI?, I hear you ask.</p>
-<p>The obvious answer is when we are not a DA but just an LA on a DC. Also, another use case could be that the required RPC ports for DRSUAPI are blocked, but SMB access is available.</p>
-<p>The VSS process looks like this:</p>
-<ol>
-<li>Create a shadow copy of the volumne contaings NTDS (e.g. a snapshot of the <code>C:\</code> drive).</li>
-<li>Access the snapshot via its kernel device path (something like <code>\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\</code>).</li>
-<li>Copy NTDS (<code>Windows\NTDS\</code>) and SYSTEM (<code>Windows\System32\config\</code>) from the snapshot  to a target location (e.g. <code>\Temp</code>).</li>
-<li>Delete the snapshot.</li>
-</ol>
-<p>Like DRSUAPI, where we <em>kind of</em> mimicked the DC-to-DC replication process, here we <em>kind of</em> mimicking the VSS process.</p>
-<p>Because it is a native Windows process, it does automatically means that it&rsquo;s <em>stealthy</em>: the pattern of creating a shadow copy, immediately accessing NTDS, and then deleting the snapshot is a pretty clear indicator of credential dumping.</p>
-<h2 id="secretsdump-1">Secretsdump<a hidden class="anchor" aria-hidden="true" href="#secretsdump-1">#</a></h2>
-<p>When we use secretsdump with the <code>-use-vss</code> flag, the execution path changes from the default DRSUAPI to VSS:</p>
+<p>VSS solves that problem: instead of trying to copy the locked file directly, it creates a snapshot (i.e., a read-only point-in-time copy) of the DC&rsquo;s entire volume (e.g. <code>C:\</code>). Within this snapshot, <code>NTDS</code> (and <code>SYSTEM</code>!) is no longer actively in use, meaning it is no longer locked, and, therefore, can be safely copied.</p>
 <figure>
-    <img loading="lazy" src="/images/impacket-use-vss.png"
-         alt="Secretsdump help menu explaining the -use-vss flag." width="650"/> 
+    <img loading="lazy" src="/images/problem-solved-great.gif"
+         alt="The comedian Trevor Noah saying &#39;Problem solved&#39;." width="450"/> 
 </figure>
 
-<ol>
-<li>
-<p><strong>Remote Service Creation</strong></p>
-<p>Secretsdump connects to the DC&rsquo;s <strong>Service Control Manager (SCM)</strong> (the Windows component that manages services) via RPC over SMB and starts the <code>RemoteRegistry</code> service. This service allows remote access to the registry, which is needed to extract the SYSTEM hive (containing the SYSKEY used to decrypt NTDS later):</p>
+<p>It should be noted that the permission to create a shadow copy (<a href="https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/security-policy-settings/back-up-files-and-directories"><code>SeBackupPrivilege</code></a>) is typically assigned only to <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#administrators">Administrators</a> and members of the <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#backup-operators">Backup Operators</a> or <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-groups#server-operators">Server Operators</a> groups.</p>
+<p>Let&rsquo;s see how the VSS process looks like.</p>
+<h2 id="the-high-level-vss-process">The (High-Level) VSS Process<a hidden class="anchor" aria-hidden="true" href="#the-high-level-vss-process">#</a></h2>
+<h3 id="1-dc-access">1. DC Access<a hidden class="anchor" aria-hidden="true" href="#1-dc-access">#</a></h3>
+<p>First, we need to access the DC; <code>secretsdump</code> does that by connecting to the DC&rsquo;s Service Control Manager (SCM) (the Windows component that manages services) via RPC over SMB and starting the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-rrp/0fa3191d-bb79-490a-81bd-54c2601b7a78"><code>RemoteRegistry</code></a> service. As the name implies, this service allows remote access to the registry, which is needed to extract the <code>SYSTEM</code> hive:</p>
 <figure>
-        <img loading="lazy" src="/images/impacket-vss-1.png"
-             alt="The relevant code snippet from secretsdump." width="600"/> 
-    </figure>
+    <img loading="lazy" src="/images/impacket-vss-1.png"
+         alt="The relevant code snippet from secretsdump." width="600"/> 
+</figure>
 
-</li>
-<li>
-<p><strong>Shadow Copy Creation</strong></p>
-<p>Then, it executes <code>vssadmin</code> on the DC to create the volume snapshot. The command is executed remotely using one of several methods (<code>-exec-method</code> flag): creating a temporary service via SCM (default), using WMI, or other remote execution techniques:</p>
+<h3 id="2-shadow-copy-creation">2. Shadow Copy Creation<a hidden class="anchor" aria-hidden="true" href="#2-shadow-copy-creation">#</a></h3>
+<p>Next, we need to create a shadow copy of the volume containing the <code>NTDS</code> (e.g. a snapshot of the <code>C:\</code> drive). To do that, <code>secretsdump</code> executes <a href="https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/vssadmin"><code>vssadmin</code></a> on the DC, which (by default) creates a temporary service via SCM:</p>
 <figure>
-        <img loading="lazy" src="/images/impacket-vss-2.png"
-             alt="The relevant code snippet from secretsdump." width="850"/> 
-    </figure>
+    <img loading="lazy" src="/images/impacket-vss-2.png"
+         alt="The relevant code snippet from secretsdump." width="850"/> 
+</figure>
 
-</li>
-<li>
-<p><strong>File Extraction via SMB</strong></p>
-<p>Once the shadow copy exists, secretsdump accesses it via the <code>ADMIN$</code> share and uses SMB to copy both NTDS and SYSTEM from the snapshot to the target machine:</p>
+<h3 id="3-file-extraction-via-smb">3. File Extraction via SMB<a hidden class="anchor" aria-hidden="true" href="#3-file-extraction-via-smb">#</a></h3>
+<p>To copy the target files (<code>NTDS</code> and <code>SYSTEM</code>), we need to access the snapshot via its kernel device path (e.g. <code>\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\</code>). <code>secretsdump</code> does that via the <code>ADMIN$</code> share and uses SMB to copy both files from the snapshot to the target machine:</p>
 <figure>
-        <img loading="lazy" src="/images/impacket-vss-3.png"
-             alt="The relevant code snippet from secretsdump." width="600"/> 
-    </figure>
+    <img loading="lazy" src="/images/impacket-vss-3.png"
+         alt="The relevant code snippet from secretsdump." width="600"/> 
+</figure>
 
-</li>
-<li>
-<p><strong>Shadow Copy Deletion</strong></p>
-<p>After copying the files, secretsdump deletes the shadow copy:</p>
+<h3 id="4-shadow-copy-deletion">4. Shadow Copy Deletion<a hidden class="anchor" aria-hidden="true" href="#4-shadow-copy-deletion">#</a></h3>
+<p>After copying the files, the snapshot gets deleted:</p>
 <figure>
-        <img loading="lazy" src="/images/impacket-vss-4.png"
-             alt="The relevant code snippet from secretsdump." width="400"/> 
-    </figure>
+    <img loading="lazy" src="/images/impacket-vss-4.png"
+         alt="The relevant code snippet from secretsdump." width="400"/> 
+</figure>
 
-</li>
-</ol>
-<p>Here&rsquo;s a handy recap:</p>
+<h1 id="dcsync-vs-vss">DCSync vs VSS<a hidden class="anchor" aria-hidden="true" href="#dcsync-vs-vss">#</a></h1>
+<p>Here is a handy table with the major differences between the two:</p>
 <table>
   <thead>
       <tr>
           <th>Aspect</th>
-          <th>DRSUAPI</th>
+          <th>DCSync</th>
           <th>VSS</th>
       </tr>
   </thead>
   <tbody>
       <tr>
-          <td><strong>Network protocol</strong></td>
+          <td><strong>Protocol(s)</strong></td>
           <td>RPC (DRSUAPI calls)</td>
           <td>RPC (SCM) + SMB (file transfer)</td>
       </tr>
       <tr>
-          <td><strong>Data format</strong></td>
-          <td>Encrypted attributes in DRS responses</td>
-          <td>Raw ESE database file</td>
+          <td><strong>Permissions</strong></td>
+          <td>DA level or similar (e.g. <code>DC$</code>)</td>
+          <td>LA level or similar (e.g. Backup Operators)</td>
       </tr>
       <tr>
-          <td><strong>Decryption</strong></td>
-          <td>Session key from DRSBind</td>
-          <td>SYSKEY from SYSTEM hive</td>
-      </tr>
-      <tr>
-          <td><strong>Extraction granularity</strong></td>
-          <td>Per-user (can target specific accounts)</td>
-          <td>All-or-nothing (entire database)</td>
+          <td><strong>Granularity</strong></td>
+          <td>Targeted (specific accounts)</td>
+          <td>Bulk (entire database)</td>
       </tr>
       <tr>
           <td><strong>Speed</strong></td>
@@ -411,31 +345,84 @@ talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/inte
           <td>Slow (snapshot + file copy)</td>
       </tr>
       <tr>
-          <td><strong>Disk footprint on DC</strong></td>
-          <td>None</td>
-          <td>Temporary shadow copy</td>
+          <td><strong>Decryption</strong></td>
+          <td>Session key from <code>DRSBind</code></td>
+          <td><code>Syskey</code> from <code>SYSTEM</code> hive</td>
       </tr>
   </tbody>
 </table>
-<h2 id="netexec-as-a-wrapper">NetExec as a Wrapper<a hidden class="anchor" aria-hidden="true" href="#netexec-as-a-wrapper">#</a></h2>
-<p>NetExec makes heavy use of Impacket scripts and its <a href="https://github.com/Pennyw0rth/NetExec/blob/main/nxc/protocols/smb.py"><code>smb.py</code></a> script, which includes the NTDS extraction module, is no different.</p>
-<p>The <a href="https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit?q=raw-ntds-copy#dump-all-users-from-the-ntds.dit"><code>--ntds</code></a> flag is simply a wrapper around Impacket&rsquo;s <code>secretsdump</code>. In brief, it imports <code>NTDSHashes</code> from secretsdump and calls it with <code>useVSSMethod=False</code>, triggering its DRSUAPI code path. This is identical to running <code>secretsdump.py -just-dc</code> directly.</p>
-<figure>
-    <img loading="lazy" src="/images/nxc-drsuapi-1.png"
-         alt="The relevant code snippet from netexec&#39;s smb.py script." width="500"/> 
-</figure>
-
-<figure>
-    <img loading="lazy" src="/images/nxc-drsuapi-2.png"
-         alt="The relevant code snippet from netexec&#39;s smb.py script." width="300"/> 
-</figure>
-
-<p>Just like DRSUAPI, NetExec also includes the <a href="https://www.netexec.wiki/smb-protocol/obtaining-credentials/dump-ntds.dit?q=raw-ntds-copy#dump-all-users-from-the-ntds.dit"><code>--ntds vss</code></a> flag, which simply sets <code>useVSSMethod=True</code> and triggers the VSS path:</p>
-<figure>
-    <img loading="lazy" src="/images/nxc-drsuapi-3.png"
-         alt="The relevant code snippet from netexec&#39;s smb.py script." width="500"/> 
-</figure>
-
+<p>As you can see, DCSync is the default method for a reason: it is fast, granular, and only uses RPC. So why would we ever want to use the slower, bulk VSS method, I hear you ask?</p>
+<p>A scenario that VSS could be useful is when we don&rsquo;t have replication permissions, but we are an LA on a DC or we have Backup/Server Operators membership. Another scenario is when the RPC ports required for DCSync are blocked but SMB access is still available.</p>
+<p>Both of these scenarios don&rsquo;t really apply to the password audit process, but it is never bad to have a backup method!</p>
+<h1 id="secretsdump">Secretsdump<a hidden class="anchor" aria-hidden="true" href="#secretsdump">#</a></h1>
+<p>Most of us use <code>secretsdump</code> directly or indirectly (e.g. via wrappers like <a href="https://www.netexec.wiki/">NetExec</a>). But, if you are like me, there is a good chance that you don&rsquo;t make full use of its functionality. So I thought that it might be useful to list out some potentially underused flags for reference:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Flag</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>just-dc</code></td>
+          <td>Extracts only <code>NTDS</code> data, i.e., NTLM hashes and Kerberos keys.</td>
+      </tr>
+      <tr>
+          <td><code>-just-dc-ntlm</code></td>
+          <td>Extracts only NTLM hashes, faster for large domains. Do we even need Kerberos keys?</td>
+      </tr>
+      <tr>
+          <td><code>-just-dc-user</code></td>
+          <td>Extracts credentials for a target user, can be useful for validation.</td>
+      </tr>
+      <tr>
+          <td><code>-history</code></td>
+          <td>Includes the <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/a-ntpwdhistory"><code>ntPwdHistory</code></a> and <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/a-lmpwdhistory"><code>lmPwdHistory</code></a> attributes, useful for checking patterns.</td>
+      </tr>
+      <tr>
+          <td><code>-resumefile</code></td>
+          <td>Tracks progress by recording the last successfully processed user&rsquo;s SID. If extraction is interrupted, subsequent runs can resume from the last checkpoint rather than starting over. Who wants to start over?</td>
+      </tr>
+      <tr>
+          <td><code>-outputfile</code></td>
+          <td>Generates <code>.ntds</code> (NTLM hashes), <code>.ntds.cleartext</code> (cleartext passwords), <code>.ntds.kerberos</code> (Kerberos keys), <code>.sam</code> (SAM database hashes), <code>.secrets</code> (LSA secrets, cached credentials, and machine account passwords). Organisation is key!</td>
+      </tr>
+      <tr>
+          <td><code>-pwd-last-set</code></td>
+          <td>When each password was last changed based on the <a href="https://learn.microsoft.com/en-us/windows/win32/adschema/a-pwdlastset"><code>pwdLastSet</code></a> attribute, again, useful for checking patterns.</td>
+      </tr>
+      <tr>
+          <td><code>-user-status</code></td>
+          <td>Show whether accounts are enabled, disabled, or locked. Do we even need disabled accounts on our data?</td>
+      </tr>
+  </tbody>
+</table>
+<blockquote>
+<p>TO-CHECK: <code>user-status</code> is binary (enabled/disabled) or includes locked?</p>
+</blockquote>
+<h1 id="honorable-mention">Honorable Mention<a hidden class="anchor" aria-hidden="true" href="#honorable-mention">#</a></h1>
+<p>As we now know, <code>secretsdump</code>&rsquo;s DCSync uses a multi-protocol approach that requires both SMB (authentication) and RPC (DRSUAPI calls) access. In addition, when Kerberos is used, we need to have the <code>CIFS/domaincontroller</code> SPN.</p>
+<p>Let&rsquo;s say that SMB access is blocked and VSS cannot be used as an alternative. In this case, we can use LDAP! <a href="https://github.com/gentilkiwi/mimikatz">Mimikatz</a>&rsquo;s DCSync implementation uses LDAP for the authentication part and then, like <code>secretsdump</code>, RPC for the DRSUAPI calls.</p>
+<p>However, for most internal assessments, this distinction is just a good to know thing; all required ports are typically available.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Command</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>lsadump::dcsync /domain:mollysec.local /all /csv</code></td>
+          <td>Complete extraction.</td>
+      </tr>
+      <tr>
+          <td><code>lsadump::dcsync /domain:mollysec.local /user:Administrator</code></td>
+          <td>Targeted extraction.</td>
+      </tr>
+  </tbody>
+</table>
 <p><strong>Next:</strong> <a href="/posts/password-audits-part-2/">Password Audits Part 2: Hash Organization →</a></p>
 
 

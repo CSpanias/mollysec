@@ -162,10 +162,12 @@
 └── analysis/
     └── password_audit_report.xlsx
 </code></pre><p>File naming conventions should include the DC hostname to track the source when extracting from multiple DCs, a date and timestamp for tracking multiple extractions during long engagements, and optionally the extraction method for troubleshooting if we&rsquo;re comparing different approaches.</p>
+<p>Comparing hash counts against expected user counts provides quick validation. We can verify the approximate user count with <code>net user /domain</code> and compare against the number of hashes extracted. Significant discrepancies warrant re-running the extraction and comparing outputs for consistency.</p>
 <h1 id="preparing-hashes-for-cracking">Preparing Hashes for Cracking<a hidden class="anchor" aria-hidden="true" href="#preparing-hashes-for-cracking">#</a></h1>
 <blockquote>
 <p>Compare how each tool output the hashes!</p>
 </blockquote>
+<p>However, Mimikatz requires execution on a Windows host, typically accessed via RDP or WinRM. The output requires parsing if we need standardized file formats compatible with our cracking tools, as the default console output isn&rsquo;t optimized for direct ingestion into Hashcat or John the Ripper.</p>
 <p>Most extraction methods output hashes in formats compatible with Hashcat or John the Ripper. Secretsdump&rsquo;s <code>.ntds</code> file uses this format:</p>
 <pre tabindex="0"><code>DOMAIN\\username:RID:LM_hash:NTLM_hash:::
 </code></pre><p>For Hashcat, we typically extract just the NTLM hashes:</p>
