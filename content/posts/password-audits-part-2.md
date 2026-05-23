@@ -50,12 +50,12 @@ Let's break down each part so we know with what we are dealing with:
 
 Our (main) goal here is to recover the last part of the NTLM (the NT) hash. The LM part will, more often than not, have the value of `aad3b435b51404eeaad3b435b51404ee` which is a placeholder value indicating that this method is disabled.
 
-Nevertheless, besides the fact that LM is considered the "[*grandpa of authentication*](https://learn.microsoft.com/en-us/archive/blogs/miriamxyra/stop-using-lan-manager-and-ntlmv1#first-step-audit)" (implemented in 1987!), we will have to check if it is present within NTDS as there are still environments out there that actually use it!
+Although, LM is considered the "[*grandpa of authentication*](https://learn.microsoft.com/en-us/archive/blogs/miriamxyra/stop-using-lan-manager-and-ntlmv1#first-step-audit)" (implemented in 1987!), we will have to check its presence as there are still environments out there that actually use it!
 
 {{<figure 
-    src="/images/win-nt-3.1.png"
-    alt="The logo and user interface of Windows NT 3.1."
-    width="700"
+    src="/images/windows-old.gif"
+    alt="An elder employee dragging the 'My Computer' icon to `Recycle Bin` which makes his actual computer to disappear."
+    width="500"
     caption=""
 >}}
 
@@ -186,11 +186,11 @@ The important thing for now, is that we have two ready-to-be-cracked files: `ntd
 
 At this point, I think we can all agree that none of the individual steps was particularly complex in the above process. However, repeating the process manually would be tedious and could introduce errors. So let's automate it.
 
-The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use.
-
 # Vibe-Coding
 
-Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser)! I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! The final script includes some optional stuff that we haven't talked about, but you can just ignore those for now:
+The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use. I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser); I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
+
+The final script includes some optional stuff that we haven't talked about, so ignore those for now:
 
 ```bash
 $ ./hash-organiser.sh
@@ -238,7 +238,7 @@ hash-organiser/
 1 directory, 7 files
 ```
 
-All expected files have been generated successfully. Let’s now inspect each of them to verify that everything looks correct and that the format matches what we expect:
+All expected files have been generated successfully and their content matches the format what we expect:
 
 ```bash
 $ for file in $(ls hash-organiser); do echo -e "Reading file: $file\n"; head -n3 hash-organiser/$file; echo -e "\n"; done
