@@ -174,11 +174,6 @@
 <p>The reality is that we don&rsquo;t actually want to fully impersonate a DC anyway. The actual DC-to-DC replication process has some protections in place: communication is typically performed using <a href="https://learn.microsoft.com/en-us/windows-server/security/kerberos/kerberos-authentication-overview">Kerberos</a>, with <a href="https://learn.microsoft.com/en-us/windows/win32/ad/about-mutual-authentication-using-kerberos">mutual authentication</a> (so both sides verify who they&rsquo;re talking to) and <a href="https://learn.microsoft.com/en-us/windows/win32/ad/integrity-and-privacy">encryption</a> (so the exchanged data stays safe in transit).</p>
 <p>As an example, if we were fully impersonating a DC, we probably wouldn&rsquo;t be able to use NTLM authentication (<code>-hashes</code>). We are able to do so because when a non-DC host connects to a DC, the latter couldn&rsquo;t give a <a href="https://www.dota2.com/hero/puck">puck</a> about enforcing secure communication; as long as we have the right permissions, we can simply call the DRSUAPI replication interface.</p>
 <p>DCSync leverages the legit replication process, while bypassing the assumptions those protections rely on!</p>
-<figure>
-    <img loading="lazy" src="/images/dahliabunni-like-a-boss.gif"
-         alt="An image of Holywood actors singing &#39;Like a boss&#39;." width="500"/> 
-</figure>
-
 <p>At first glance, the fact that the DC does not verify that the client is also a DC might seem like a major security gap. However, the replication process needs to be used by more systems than just DCs, such as backup tools and monitoring software, so, it cannot realistically be restricted to just them.</p>
 <p>It is also worth noting that when Kerberos is used as the authentication method, the client constructs a very <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f">specific Service Principal Name (SPN)</a> for the replication service, which looks like this:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>E3514235-4B06-11D1-AB04-00C04FC2DCD2/&lt;target DC GUID&gt;/&lt;domain&#39;s fully qualified domain name (FQDN)&gt;
@@ -215,12 +210,7 @@
 <p>This is the function that actually replicates directory data from the DC to our host.</p>
 <p>To call this function we need the Replicating Directory Changes permission (1/2). However, just calling <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/b63730ac-614c-431c-9501-28d6aca91894"><code>IDL_DRSGetNCChanges</code></a> only returns non-secret directory data (e.g. usernames, group memberships, OUs, etc.) and deliberately excludes credentials.</p>
 <p>To get the actual credentials, we need to include the <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813"><code>EXOP_REPL_SECRETS</code></a> flag. In order to do that, we need the Replicating Directory Changes All permission (2/2).</p>
-<figure>
-    <img loading="lazy" src="/images/now-were-on-the-same-page-joe-dirt.gif"
-         alt="A image of an actor saying &#39;Now we&#39;re on the same page&#39;." width="500"/> 
-</figure>
-
-<p>So after <code>secretsdump</code> has established the session and has the handle going, as we would expect, it calls <code>DRSGetNCChanges</code> along with the <code>EXOP_REPL_OBJ</code> flag:</p>
+<p>After <code>secretsdump</code> has established the session and has the handle going, as we would expect, it calls <code>DRSGetNCChanges</code> along with the <code>EXOP_REPL_OBJ</code> flag:</p>
 <figure>
     <img loading="lazy" src="/images/impacket-drsuapi-2.png"
          alt="The relevant code snippet from secretsdump." width="800"/> 

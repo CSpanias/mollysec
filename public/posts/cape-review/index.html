@@ -194,6 +194,7 @@
 <p>Below is a list of retired boxes that I believe to be a good practice to get you in the required mindset. I should note, that these boxes are not relevant in a sense that they have the same attack vectors with the actual exam, but rather that they force you to think in a similar way and practice core AD concepts.</p>
 <p>My approach when tackling boxes is to first let myself &ldquo;grind&rdquo; for a bit. If I am confident that I have tried everything I know and still can&rsquo;t get through it, then I opt for a walkthrough, either from <a href="https://0xdf.gitlab.io/">0xdf</a> or <a href="https://www.youtube.com/@ippsec">IppSec</a>. For context, I needed hints to solve most of these boxes and still did OK in CAPE, so treat them as a way to learn new things, don&rsquo;t try to reinvent the wheel.</p>
 <p>As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag on the table means that &ldquo;smart&rdquo; (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.</p>
+<p>The below boxes are good for &ldquo;warm up&rdquo;, i.e., you should feel pretty comfortable solving them without needing much help. If you feel that you are struggling, I would recommend spending some time to understand why.</p>
 <table>
   <thead>
       <tr>
@@ -209,11 +210,6 @@
           <td>ACL-Based Enum, ADCS</td>
       </tr>
       <tr>
-          <td><a href="https://www.hackthebox.com/machines/baby">Baby</a></td>
-          <td>Easy</td>
-          <td>LDAP Enumeration</td>
-      </tr>
-      <tr>
           <td><a href="https://www.hackthebox.com/machines/retro">Retro</a></td>
           <td>Easy</td>
           <td>BFA, Pre2k</td>
@@ -224,9 +220,51 @@
           <td>AS-REP Roasting, ACL-based Enum, ADCS</td>
       </tr>
       <tr>
+          <td><a href="">MartiniAD</a></td>
+          <td>Easy</td>
+          <td>Kerberos, Kerberoasting, Password Spray</td>
+      </tr>
+      <tr>
           <td><a href="https://www.hackthebox.com/machines/Certified">Certified</a></td>
           <td>Medium</td>
           <td>ACL-Based Enum, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/delegate">Delegate</a></td>
+          <td>Medium</td>
+          <td>ACL-Based Enum, Unconstrained Delegation</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Escape">Escape</a></td>
+          <td>Medium</td>
+          <td>MSSQL, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Phantom">Phantom</a></td>
+          <td>Medium</td>
+          <td>Password Spray, RBCD</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Redelegate">Redelegate</a></td>
+          <td>Hard</td>
+          <td>BFA, ACL-Based Enum, Constrained Delegation</td>
+      </tr>
+  </tbody>
+</table>
+<p>The next list of boxes isn&rsquo;t too hard either, but they can be a challenge if your notes are missing a few things:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Box</th>
+          <th>Rating</th>
+          <th>Relevancy</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/baby">Baby</a></td>
+          <td>Easy</td>
+          <td>LDAP Enumeration</td>
       </tr>
       <tr>
           <td><a href="https://www.hackthebox.com/machines/VOLEUR">Voleur</a></td>
@@ -239,11 +277,6 @@
           <td>SMB Uploads, MSSQL</td>
       </tr>
       <tr>
-          <td><a href="https://www.hackthebox.com/machines/delegate">Delegate</a></td>
-          <td>Medium</td>
-          <td>ACL-Based Enum, Unconstrained Delegation</td>
-      </tr>
-      <tr>
           <td><a href="https://www.hackthebox.com/machines/Sendai">Sendai</a></td>
           <td>Medium</td>
           <td>ACL-Based Enum, Troubleshooting Auth Erros, ADCS</td>
@@ -252,16 +285,6 @@
           <td><a href="https://www.hackthebox.com/machines/babytwo">BabyTwo</a></td>
           <td>Medium</td>
           <td>Logon Scripts, ACL-Based Enum, GPO Abuse</td>
-      </tr>
-      <tr>
-          <td><a href="https://www.hackthebox.com/machines/Escape">Escape</a></td>
-          <td>Medium</td>
-          <td>MSSQL, ADCS</td>
-      </tr>
-      <tr>
-          <td><a href="https://www.hackthebox.com/machines/Phantom">Phantom</a></td>
-          <td>Medium</td>
-          <td>Password Spray, RBCD</td>
       </tr>
       <tr>
           <td><a href="https://www.hackthebox.com/machines/tombwatcher">TombWatcher</a></td>
@@ -277,11 +300,6 @@
           <td><a href="https://www.hackthebox.com/machines/Signed">Signed</a></td>
           <td>Medium</td>
           <td>MSSQL, NTLM Reflection</td>
-      </tr>
-      <tr>
-          <td><a href="https://www.hackthebox.com/machines/Redelegate">Redelegate</a></td>
-          <td>Hard</td>
-          <td>BFA, ACL-Based Enum, Constrained Delegation</td>
       </tr>
       <tr>
           <td><a href="https://www.hackthebox.com/machines/DarkZero">DarkZero</a></td>

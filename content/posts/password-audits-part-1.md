@@ -81,13 +81,6 @@ As an example, if we were fully impersonating a DC, we probably wouldn't be able
 
 DCSync leverages the legit replication process, while bypassing the assumptions those protections rely on!
 
-{{<figure 
-    src="/images/dahliabunni-like-a-boss.gif"
-    alt="An image of Holywood actors singing 'Like a boss'."
-    width="500"
-    caption=""
->}}
-
 At first glance, the fact that the DC does not verify that the client is also a DC might seem like a major security gap. However, the replication process needs to be used by more systems than just DCs, such as backup tools and monitoring software, so, it cannot realistically be restricted to just them.
 
 It is also worth noting that when Kerberos is used as the authentication method, the client constructs a very [specific Service Principal Name (SPN)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/41efc56e-0007-4e88-bafe-d7af61efd91f) for the replication service, which looks like this:
@@ -146,14 +139,7 @@ To call this function we need the Replicating Directory Changes permission (1/2)
 
 To get the actual credentials, we need to include the [`EXOP_REPL_SECRETS`](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/565aadc5-c890-47fd-bbf5-7da4b0018813) flag. In order to do that, we need the Replicating Directory Changes All permission (2/2).
 
-{{<figure 
-    src="/images/now-were-on-the-same-page-joe-dirt.gif"
-    alt="A image of an actor saying 'Now we're on the same page'."
-    width="500"
-    caption=""
->}}
-
-So after `secretsdump` has established the session and has the handle going, as we would expect, it calls `DRSGetNCChanges` along with the `EXOP_REPL_OBJ` flag:
+After `secretsdump` has established the session and has the handle going, as we would expect, it calls `DRSGetNCChanges` along with the `EXOP_REPL_OBJ` flag:
 
 {{<figure 
     src="/images/impacket-drsuapi-2.png"
