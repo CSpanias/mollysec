@@ -260,7 +260,13 @@
 </span></span></code></pre></div><p>The important thing for now, is that we have two ready-to-be-cracked files: <code>ntds-ntlm-hashes</code> and <code>ntds-lm-hashes</code>. You might be wondering how the cracked hashes will be &ldquo;glued&rdquo; back to their users, but we will talk about that in Part 4.</p>
 <p>At this point, I think we can all agree that none of the individual steps was particularly complex in the above process. However, repeating the process manually would be tedious and could introduce errors. So let&rsquo;s automate it.</p>
 <h1 id="vibe-coding">Vibe-Coding<a hidden class="anchor" aria-hidden="true" href="#vibe-coding">#</a></h1>
-<p>The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use. I hope you did not expect me to explain how I vide-coded <a href="https://github.com/CSpanias/hash-organiser"><code>hash-organiser</code></a>; I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here!</p>
+<p>The goal here is not to create the next <a href="https://github.com/codecrafters-io/build-your-own-x">build-you-own-x</a> repo, but simply convert the above process into a minimal bash-based PoC that no person that respects themselves will ever use.</p>
+<figure>
+    <img loading="lazy" src="/images/unpopular.gif"
+         alt="An elder employee dragging the &#39;My Computer&#39; icon to `Recycle Bin` which makes his actual computer to disappear." width="500"/> 
+</figure>
+
+<p>I hope you did not expect me to explain how I vide-coded <a href="https://github.com/CSpanias/hash-organiser"><code>hash-organiser</code></a>; I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here!</p>
 <p>The final script includes some optional stuff that we haven&rsquo;t talked about, so ignore those for now:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ./hash-organiser.sh
 </span></span><span style="display:flex;"><span>Hash Organiser v1.0

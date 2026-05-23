@@ -188,7 +188,16 @@ At this point, I think we can all agree that none of the individual steps was pa
 
 # Vibe-Coding
 
-The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use. I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser); I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
+The goal here is not to create the next [build-you-own-x](https://github.com/codecrafters-io/build-your-own-x) repo, but simply convert the above process into a minimal bash-based PoC that no person that respects themselves will ever use. 
+
+{{<figure 
+    src="/images/unpopular.gif"
+    alt="An elder employee dragging the 'My Computer' icon to `Recycle Bin` which makes his actual computer to disappear."
+    width="500"
+    caption=""
+>}}
+
+I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser); I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
 
 The final script includes some optional stuff that we haven't talked about, so ignore those for now:
 
