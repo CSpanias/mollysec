@@ -14,6 +14,17 @@ thumbnail: "/images/password-audits-part-3-thumbnail.jpg"
 draft: true
 ---
 
+# Cracking NTLMs
+
+> Should be here or a part by itself?
+
+- using multiple runs of hashcat
+- rockyou → rockyou + rules → weakpass_4a → weakpass_4a + rules
+- Is this the best way for our restricted time?
+- Can we do a better job since we can leave it running in out-of-work hours for at least 3-4 days?
+- We don’t utilise sessions, could that help?
+- Is it this how actual attackers would try to crack?
+
 # Introduction
 
 

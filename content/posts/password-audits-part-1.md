@@ -4,12 +4,8 @@ date: "2026-03-13"
 author: "mollysec"
 description: "NTDS extraction in practice: DCSync vs VSS"
 featured: true
-tags: [
-
-]
-categories: [
-
-]
+tags: []
+categories: []
 series: "Password Audits"
 draft: false
 ---
@@ -23,7 +19,7 @@ I recently went from just testing (close-to-zero-functionality) web apps and API
 This can be summed up as follows:
 
 ---
-**Extract NTDS** &rarr; Clean/Organise NTDS &rarr; Recover NTDS &rarr; Generate stats.  
+**Extract NTDS** &rarr; Clean/Organise NTDS &rarr; Crack hashes &rarr; Generate stats.  
 
 ---
 

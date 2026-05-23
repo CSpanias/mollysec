@@ -17,3 +17,9 @@ body {
 table td:first-child code {
   white-space: nowrap;
 }
+
+/* Wrap code blocks */
+pre code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

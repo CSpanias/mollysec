@@ -19,6 +19,6 @@ I've been keeping my notes organized at [x7331.gitbook.io](https://x7331.gitbook
 
 So I created this site as a space to explore subjects I'm genuinely interested in and want to understand at a deeper level.
 
-Fair warning: I've only been in this field since early 2024, so there will likely be inaccuracies in my posts. I'm documenting my research as I learn. That said, I'm always open to discussion and critical feedback if you spot something worth correcting or exploring further.
+**Fair warning**: I've only been in this field since early 2024, so there will likely be inaccuracies in my posts. I'm documenting my research as I learn. That said, I'm always open to discussion and critical feedback if you spot something worth correcting or exploring further.
 
 Oh, and mollysec? That's named after my dog, Molly. As everyone knows, every good research project needs a mascot!

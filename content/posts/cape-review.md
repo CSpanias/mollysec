@@ -109,24 +109,32 @@ My approach when tackling boxes is to first let myself "grind" for a bit. If I a
 
 As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag on the table means that "smart" (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.
 
+The below boxes are good for "warm up", i.e., you should feel pretty comfortable solving them without needing much help. If you feel that you are struggling, I would recommend spending some time to understand why.
+
 | Box | Rating | Relevancy |
 | --- | ------ | --------- |
 | [EscapeTwo](https://www.hackthebox.com/machines/escapetwo) | Easy | ACL-Based Enum, ADCS |
-| [Baby](https://www.hackthebox.com/machines/baby) | Easy | LDAP Enumeration |
 | [Retro](https://www.hackthebox.com/machines/retro) | Easy | BFA, Pre2k |
 | [ShadowGate](https://www.hacksmarter.org/courses/e7586073-d447-41db-8f8e-6bd22576556d) | Easy | AS-REP Roasting, ACL-based Enum, ADCS |
+| [MartiniAD]() | Easy | Kerberos, Kerberoasting, Password Spray |
 | [Certified](https://www.hackthebox.com/machines/Certified) | Medium | ACL-Based Enum, ADCS |
-| [Voleur](https://www.hackthebox.com/machines/VOLEUR) | Medium | Kerberos, DPAPI, Deleted Objects |
-| [Breach](https://www.hackthebox.com/machines/Breach) | Medium | SMB Uploads, MSSQL |
 | [Delegate](https://www.hackthebox.com/machines/delegate) | Medium | ACL-Based Enum, Unconstrained Delegation |
-| [Sendai](https://www.hackthebox.com/machines/Sendai) | Medium | ACL-Based Enum, Troubleshooting Auth Erros, ADCS |
-| [BabyTwo](https://www.hackthebox.com/machines/babytwo) | Medium | Logon Scripts, ACL-Based Enum, GPO Abuse |
 | [Escape](https://www.hackthebox.com/machines/Escape) | Medium | MSSQL, ADCS |
 | [Phantom](https://www.hackthebox.com/machines/Phantom) | Medium | Password Spray, RBCD |
+| [Redelegate](https://www.hackthebox.com/machines/Redelegate) | Hard | BFA, ACL-Based Enum, Constrained Delegation |
+
+These boxes aren't too hard either, but they can be a challenge if your notes are missing a few things:
+
+| Box | Rating | Relevancy |
+| --- | ------ | --------- |
+| [Baby](https://www.hackthebox.com/machines/baby) | Easy | LDAP Enumeration |
+| [Voleur](https://www.hackthebox.com/machines/VOLEUR) | Medium | Kerberos, DPAPI, Deleted Objects |
+| [Breach](https://www.hackthebox.com/machines/Breach) | Medium | SMB Uploads, MSSQL |
+| [Sendai](https://www.hackthebox.com/machines/Sendai) | Medium | ACL-Based Enum, Troubleshooting Auth Erros, ADCS |
+| [BabyTwo](https://www.hackthebox.com/machines/babytwo) | Medium | Logon Scripts, ACL-Based Enum, GPO Abuse |
 | [TombWatcher](https://www.hackthebox.com/machines/tombwatcher) | Medium | ACL-Based Enum, Deleted Objects, ADCS |
 | [VulnCicada](https://www.hackthebox.com/machines/VulnCicada) | Medium | Kerberos, ADCS |
 | [Signed](https://www.hackthebox.com/machines/Signed) | Medium | MSSQL, NTLM Reflection |
-| [Redelegate](https://www.hackthebox.com/machines/Redelegate) | Hard | BFA, ACL-Based Enum, Constrained Delegation |
 | [DarkZero](https://www.hackthebox.com/machines/DarkZero) | Hard | MSSQL, Logon Types, Forest Trusts |
 | [RustyKey](https://www.hackthebox.com/machines/RustyKey) | Hard | Kerberos, Timeroasting, RBCD |
 

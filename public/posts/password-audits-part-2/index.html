@@ -7,10 +7,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Password Audits Part 2: Hash Organisation | mollysec</title>
 <meta name="keywords" content="">
-<meta name="description" content="Article focusing the process of organizing the hashes extracted from the NTDS.dit file (Active Directory&#39;s database), during the password audit process.">
+<meta name="description" content="Fine-tuning secretsdump output.">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/password-audits-part-2/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.1c1617080dbb6ae5add8442d3b25f09bd9648100e3da325098081622225af159.css" integrity="sha256-HBYXCA27auWt2EQtOyXwm9lkgQDj2jJQmAgWIiJa8Vk=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
@@ -128,66 +128,152 @@
       </span>
     </h1>
     <div class="post-description">
-      Article focusing the process of organizing the hashes extracted from the NTDS.dit file (Active Directory&#39;s database), during the password audit process.
+      Fine-tuning secretsdump output.
     </div>
     <div class="post-meta">
 
-<span title='2026-03-14 00:00:00 +0000 UTC'>March 14, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+<span title='2026-05-17 00:00:00 +0000 UTC'>May 17, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
 
 </div>
   </header> 
   <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
-<p>With NTDS.dit and the SYSTEM hive successfully extracted, we&rsquo;re ready to proceed to the password cracking phase. The next section of this guide will cover hash extraction from the NTDS database, optimal Hashcat configuration for password auditing, and analysis techniques for identifying systemic password weaknesses in the organization.</p>
-<h1 id="organising-secrets">Organising secrets<a hidden class="anchor" aria-hidden="true" href="#organising-secrets">#</a></h1>
-<ul>
-<li>How the current tool (<code>secretsorganise</code>) works exactly?</li>
-<li>Are there other open-source tools that are better?</li>
-<li>If not, can we make it better?</li>
-<li>We crack the <code>[ALL]-[NTLM].txt</code> file that outputs</li>
-</ul>
-<h1 id="output-handling-and-organization">Output Handling and Organization<a hidden class="anchor" aria-hidden="true" href="#output-handling-and-organization">#</a></h1>
-<p>Regardless of extraction method, we need to organize output files for efficient downstream processing. A standardized directory structure prevents confusion during multi-DC extractions and long-duration engagements.</p>
-<p>We recommend organizing files hierarchically with separate directories for extraction, cracking, and analysis phases:</p>
-<pre tabindex="0"><code>password_audit/
-├── extraction/
-│   ├── dc01_ntds_20240315/
-│   │   ├── ntds.dit
-│   │   ├── SYSTEM
-│   │   └── extraction_metadata.txt
-│   ├── dc02_ntds_20240315/
-│   └── combined_hashes.txt
-├── cracking/
-│   ├── hashcat_sessions/
-│   └── cracked_passwords.txt
-└── analysis/
-    └── password_audit_report.xlsx
-</code></pre><p>File naming conventions should include the DC hostname to track the source when extracting from multiple DCs, a date and timestamp for tracking multiple extractions during long engagements, and optionally the extraction method for troubleshooting if we&rsquo;re comparing different approaches.</p>
-<p>Comparing hash counts against expected user counts provides quick validation. We can verify the approximate user count with <code>net user /domain</code> and compare against the number of hashes extracted. Significant discrepancies warrant re-running the extraction and comparing outputs for consistency.</p>
-<h1 id="preparing-hashes-for-cracking">Preparing Hashes for Cracking<a hidden class="anchor" aria-hidden="true" href="#preparing-hashes-for-cracking">#</a></h1>
+<p>In <a href="/posts/password-audits-part-1/">Part 1</a>, we talked about how we can extract credentials from <code>NTDS</code> using <a href="/posts/password-audits-part-1/#dcsync-via-drsuapi">DCSync</a> and <a href="/posts/password-audits-part-1/#vss">VSS</a>. Now, it is time to think how to best handle the <code>NTDS</code> file. Extracting <code>NTDS</code> is typically the last step in a CTF, but it is just the first one here:</p>
+<hr>
+<p><del>Extract NTDS</del> → <strong>Clean/Organise NTDS</strong> → Crack hashes → Generate stats.</p>
+<hr>
+<p>The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from <code>NTDS</code> and extract it. This article will be mostly myself thinking out loud as of why we need or don&rsquo;t need certain elements.</p>
+<p>While reading this, make sure to keep in mind my <a href="../about/#why-mollysec">fair warning</a>; it is there for a reason!</p>
+<p>At the end of this, I will try to &ldquo;create&rdquo; (i.e., vibe-code) a minimal bash-based script to automate the whole process. It will be so simple, that even I will be wondering why did I even vibe-code it. But its 2026, so why not?</p>
+<figure>
+    <img loading="lazy" src="/images/vibe-coding-check.png"
+         alt="A man lying on his sofa enjoying a drink while saying to a robot &#39;Build an app. I will vibe-check it later&#39;." width="500"/> 
+</figure>
+
+<p>Let&rsquo;s get started!</p>
+<h1 id="tldr-on-ntlm">TL;DR on NTLM<a hidden class="anchor" aria-hidden="true" href="#tldr-on-ntlm">#</a></h1>
+<p>Before deciding what we need, let&rsquo;s first establish what the extracted <code>NTDS</code> contains. In our case, it will only contain <a href="https://learn.microsoft.com/en-us/windows-server/security/kerberos/ntlm-overview">New Technology LAN (Local Area Network) Manager (NTLM)</a> hashes that look like this:</p>
 <blockquote>
-<p>Compare how each tool output the hashes!</p>
+<p><code>PUPPY.HTB\levi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a3093995466570f435b8:::</code></p>
 </blockquote>
-<p>However, Mimikatz requires execution on a Windows host, typically accessed via RDP or WinRM. The output requires parsing if we need standardized file formats compatible with our cracking tools, as the default console output isn&rsquo;t optimized for direct ingestion into Hashcat or John the Ripper.</p>
-<p>Most extraction methods output hashes in formats compatible with Hashcat or John the Ripper. Secretsdump&rsquo;s <code>.ntds</code> file uses this format:</p>
-<pre tabindex="0"><code>DOMAIN\\username:RID:LM_hash:NTLM_hash:::
-</code></pre><p>For Hashcat, we typically extract just the NTLM hashes:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat extracted_creds.ntds | cut -d: -f4 &gt; ntlm_hashes.txt
-</span></span></code></pre></div><p>Or preserve username associations for analysis:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat extracted_creds.ntds | cut -d: -f1,4 --output-delimiter<span style="color:#f92672">=</span>: &gt; user_ntlm_pairs.txt
-</span></span></code></pre></div><p>The username-hash pairing is particularly valuable during the analysis phase when we need to identify which accounts use weak passwords and correlate cracking success with privilege levels or organizational roles.</p>
-<h1 id="cracking-ntlms">Cracking NTLMs<a hidden class="anchor" aria-hidden="true" href="#cracking-ntlms">#</a></h1>
-<blockquote>
-<p>Should be here or a part by itself?</p>
-</blockquote>
+<p>Let&rsquo;s break down each part so we know with what we are dealing with:</p>
 <ul>
-<li>using multiple runs of hashcat</li>
-<li>rockyou → rockyou + rules → weakpass_4a → weakpass_4a + rules</li>
-<li>Is this the best way for our restricted time?</li>
-<li>Can we do a better job since we can leave it running in out-of-work hours for at least 3-4 days?</li>
-<li>We don’t utilise sessions, could that help?</li>
-<li>Is it this how actual attackers would try to crack?</li>
+<li><code>PUPPY.HTB</code> → domain</li>
+<li><code>levi.james</code> → username</li>
+<li><code>1103</code> → <a href="https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-security-identifiers#rid-allocation">Relative Identifier (RID)</a></li>
+<li><code>aad3b435b51404eeaad3b435b51404ee</code> → <a href="https://learn.microsoft.com/en-us/archive/blogs/miriamxyra/stop-using-lan-manager-and-ntlmv1">LM hash</a></li>
+<li><code>ff4269fdf7e4a3093995466570f435b8</code> → NT hash</li>
 </ul>
-<p><strong>Next:</strong> <a href="/posts/password-audits-part-3/">Password Audits Part 3: Hash Analysis →</a></p>
+<p>Our (main) goal here is to recover the last part of the NTLM (the NT) hash. The LM part will, more often than not, have the value of <code>aad3b435b51404eeaad3b435b51404ee</code> which is a placeholder value indicating that this method is disabled.</p>
+<p>Nevertheless, besides the fact that LM is considered the &ldquo;<a href="https://learn.microsoft.com/en-us/archive/blogs/miriamxyra/stop-using-lan-manager-and-ntlmv1#first-step-audit"><em>grandpa of authentication</em></a>&rdquo; (implemented in 1987!), we will have to check if it is present within NTDS as there are still environments out there that actually use it!</p>
+<figure>
+    <img loading="lazy" src="/images/win-nt-3.1.png"
+         alt="The logo and user interface of Windows NT 3.1." width="700"/> 
+</figure>
+
+<h1 id="filtering-ntds">Filtering NTDS<a hidden class="anchor" aria-hidden="true" href="#filtering-ntds">#</a></h1>
+<p>As a Proof of Concept (PoC), I will use an expanded version of the NTDS from Hack The Box&rsquo;s <a href="https://www.hackthebox.com/machines/puppy">Puppy</a> machine. The original one did not contain any LM hashes and I also needed to add some testing-related accounts (you will understand why a bit later) so I had to add those.</p>
+<p>So let&rsquo;s start with the NTDS extraction command. Our goal is to assess the domain, therefore, we only need:</p>
+<ul>
+<li>NTLM hashes → <code>-just-dc-ntlm</code></li>
+<li>Enabled accounts (represent actual risk in case of a compromise) → <code>-user-status</code></li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract only the NTLM hashes from NTDS and include user status (enabled/disabled)</span>
+</span></span><span style="display:flex;"><span>$ secretsdump.py puppy.htb/steph.cooper_adm:<span style="color:#e6db74">&#39;Pass123&#39;</span>@10.129.232.75 -user-status -just-dc-ntlm -outputfile puppy.htb
+</span></span></code></pre></div><p>The above command will create a single file (<code>puppy.htb.ntds</code>) with a list of NTLM hashes and their statuses:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Check the format</span>
+</span></span><span style="display:flex;"><span>$ head -n5 puppy.htb.ntds
+</span></span><span style="display:flex;"><span>Administrator:500:aad3b435b51404eeaad3b435b51404ee:bb0edc15e49ceb4120c7bd7e6e65d75b::: <span style="color:#f92672">(</span>status<span style="color:#f92672">=</span>Enabled<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0::: <span style="color:#f92672">(</span>status<span style="color:#f92672">=</span>Disabled<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>krbtgt:502:aad3b435b51404eeaad3b435b51404ee:a4f2989236a639ef3f766e5fe1aad94a::: <span style="color:#f92672">(</span>status<span style="color:#f92672">=</span>Disabled<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\l</span>evi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a3093995466570f435b8::: <span style="color:#f92672">(</span>status<span style="color:#f92672">=</span>Enabled<span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\a</span>nt.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d2b34f438058b::: <span style="color:#f92672">(</span>status<span style="color:#f92672">=</span>Enabled<span style="color:#f92672">)</span>
+</span></span></code></pre></div><p>As we said, we only need enabled accounts, so let&rsquo;s filter out the disabled ones:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract only enabled objects</span>
+</span></span><span style="display:flex;"><span>$ grep <span style="color:#e6db74">&#39;(status=Enabled)&#39;</span> puppy.htb.ntds.expanded | awk <span style="color:#e6db74">&#39;{print $1}&#39;</span> &gt; ntds-enabled
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ head -n3 ntds-enabled
+</span></span><span style="display:flex;"><span>Administrator:500:aad3b435b51404eeaad3b435b51404ee:bb0edc15e49ceb4120c7bd7e6e65d75b:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\l</span>evi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a3093995466570f435b8:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\a</span>nt.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d2b34f438058b:::
+</span></span></code></pre></div><p>Besides disabled accounts, machine accounts (e.g. <code>DC01$</code>) can be excluded as well. These typically have Windows-generated (long and automatically rotated) passwords, which are practically non-crackable. Let&rsquo;s seperate them from the user accounts:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract machine accounts</span>
+</span></span><span style="display:flex;"><span>$ awk -F <span style="color:#e6db74">&#39;:&#39;</span> <span style="color:#e6db74">&#39;$1 ~ /\$$/&#39;</span> ntds-enabled &gt; ntds-machine-accounts
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ head -n5 ntds-machine-accounts
+</span></span><span style="display:flex;"><span>DC$:1000:aad3b435b51404eeaad3b435b51404ee:d5047916131e6ba897f975fc5f19c8df:::
+</span></span><span style="display:flex;"><span>SQL01$:1000:aad3b435b51404eeaad3b435b51404ee:d5047916131e6ba897f975fc5f19c8df:::
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Extract user accounts</span>
+</span></span><span style="display:flex;"><span>$ awk -F <span style="color:#e6db74">&#39;:&#39;</span> <span style="color:#e6db74">&#39;$1 !~ /\$$/&#39;</span> ntds-enabled &gt; ntds-user-accounts
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ head -n3 ntds-user-accounts
+</span></span><span style="display:flex;"><span>Administrator:500:aad3b435b51404eeaad3b435b51404ee:bb0edc15e49ceb4120c7bd7e6e65d75b:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\l</span>evi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a3093995466570f435b8:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\a</span>nt.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d2b34f438058b:::
+</span></span></code></pre></div><p>Next, we need to get rid of the testing accounts. The client usually provides us with two accounts: a normal user account and a Domain Admin account. These have different naming conventions for each company, but almost always include a testing-related string, for example, &rsquo;test&rsquo; or the company&rsquo;s name. Let&rsquo;s say our company is called MollySec and that the provided accounts are <code>mollysec_user</code> and <code>mollysec-admin</code>.</p>
+<p>It makes sense to remove them as these are temporary accounts (or at least they should be!) created by the client just for us and not actual domain users. Imagine delivering a report to the client claiming that we recovered X% of their DA accounts while including our own testing account in. That would be naugthy!</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract the testing accounts</span>
+</span></span><span style="display:flex;"><span>$ grep -i <span style="color:#e6db74">&#39;mollysec&#39;</span> ntds-user-accounts &gt; ntds-testing-accounts
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ cat ntds-testing-accounts
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\m</span>ollysec_user:1108:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\m</span>ollysec-admin:1108:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c:::
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Filter out the testing accounts</span>
+</span></span><span style="display:flex;"><span>$ grep -vi <span style="color:#e6db74">&#39;mollysec&#39;</span> ntds-user-accounts &gt; ntds-user-accounts-clean
+</span></span></code></pre></div><p>So far, so good. We have our &ldquo;main&rdquo; file (<code>ntds-user-accounts-clean</code>) that includes <strong>enabled</strong>, <strong>non-testing</strong>, <strong>user accounts</strong>. At this point, we can split the NTLM hashes into two parts: NT and LM as we will need to use different hashcat modes for each. In addition, finding a domain that uses LM hashes is a finding by itself!</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Extract NTML hashes</span>
+</span></span><span style="display:flex;"><span>$ cut -d <span style="color:#e6db74">&#39;:&#39;</span> -f4 ntds-user-accounts-clean | sort -u &gt; ntds-ntlm-hashes
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ head -n3 ntds-ntlm-hashes
+</span></span><span style="display:flex;"><span>32ed87bdb5fdc5e9cba88547376818d4
+</span></span><span style="display:flex;"><span>3c59dc048e8850243be8079a5c74d079
+</span></span><span style="display:flex;"><span>5fbc3d5fec8206a30f4b6c473d68ae76
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Extract full records with LM hashes</span>
+</span></span><span style="display:flex;"><span>$ grep -v <span style="color:#e6db74">&#39;aad3b435b51404eeaad3b435b51404ee&#39;</span> ntds-user-accounts-clean &gt; ntds-lm-hashes-full
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ head -n3 ntds-lm-hashes-full
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\l</span>egacy.user1:1401:e52cac67419a9a224a3b108f3fa6cb6d:8846f7eaee8fb117ad06bdd830b7586c:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\l</span>egacy.user2:1402:bcb2335c8c5a3ae691aab0a6e6c3d5c5:32ed87bdb5fdc5e9cba88547376818d4:::
+</span></span><span style="display:flex;"><span>PUPPY.HTB<span style="color:#ae81ff">\s</span>vc_legacy:1403:4a3b108f3fa6cb6d22aad3b435b51404:5fbc3d5fec8206a30f4b6c473d68ae76:::
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Extract LM hashes</span>
+</span></span><span style="display:flex;"><span>$ cut -d <span style="color:#e6db74">&#39;:&#39;</span> -f3 ntds-lm-hashes-full | sort -u &gt; ntds-lm-hashes
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check output</span>
+</span></span><span style="display:flex;"><span>$ cat ntds-lm-hashes
+</span></span><span style="display:flex;"><span>32ed87bdb5fdc5e9cba88547376818d4
+</span></span><span style="display:flex;"><span>5fbc3d5fec8206a30f4b6c473d68ae76
+</span></span><span style="display:flex;"><span>8846f7eaee8fb117ad06bdd830b7586c
+</span></span></code></pre></div><p>As we stand, we have the following files:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ ls -lh ntds-*
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec 2.1K May <span style="color:#ae81ff">19</span> 19:37 ntds-enabled
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec   <span style="color:#ae81ff">99</span> May <span style="color:#ae81ff">19</span> 19:39 ntds-lm-hashes
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec  <span style="color:#ae81ff">289</span> May <span style="color:#ae81ff">19</span> 19:38 ntds-lm-hashes-full
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec  <span style="color:#ae81ff">159</span> May <span style="color:#ae81ff">19</span> 19:35 ntds-machine-accounts
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec  <span style="color:#ae81ff">330</span> May <span style="color:#ae81ff">19</span> 19:38 ntds-ntlm-hashes
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec  <span style="color:#ae81ff">197</span> May <span style="color:#ae81ff">19</span> 19:38 ntds-testing-accounts
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec 1.9K May <span style="color:#ae81ff">19</span> 19:37 ntds-user-accounts
+</span></span><span style="display:flex;"><span>-rw-r--r-- <span style="color:#ae81ff">1</span> mollysec mollysec 1.7K May <span style="color:#ae81ff">19</span> 19:38 ntds-user-accounts-clean
+</span></span></code></pre></div><p>The important thing for now, is that we have two ready-to-be-cracked files: <code>ntds-ntlm-hashes</code> and <code>ntds-lm-hashes</code>. You might be wondering any cracked hash will be associated back with its user, but that&rsquo;s pretty straightforward to do. We will see how this can be done in Part 4.</p>
+<p>At this point, I think we can all agree that none of the individual steps was particularly complex in the above process. So it&rsquo;s time to automate it. The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use.</p>
+<h1 id="vibe-coding">Vibe-Coding<a hidden class="anchor" aria-hidden="true" href="#vibe-coding">#</a></h1>
+<p>Well, I hope you did not expect me to explain how I vide-coded <a href="https://github.com/CSpanias/hash-organiser"><code>hash-organiser</code></a>; I am sure you can do much better than the generated result!</p>
+<figure>
+    <img loading="lazy" src="/images/expectations-can-only-lead-to-disappointment.gif"
+         alt="WilDasovich saying &#39;Expectations can only lead to disappointment&#39;." width="500"/> 
+</figure>
+
+<h1 id="conclusion">Conclusion<a hidden class="anchor" aria-hidden="true" href="#conclusion">#</a></h1>
+<p>WIP</p>
+<p><strong>Next:</strong> [Password Audits Part 3: Hash Analysis →]</p>
 
 
   </div>

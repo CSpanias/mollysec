@@ -10,7 +10,7 @@
 <meta name="description" content="Article focusing the process of recovering hashes extracted from the NTDS.dit file (Active Directory&#39;s database), during the password audit process.">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/password-audits-part-3/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.1c1617080dbb6ae5add8442d3b25f09bd9648100e3da325098081622225af159.css" integrity="sha256-HBYXCA27auWt2EQtOyXwm9lkgQDj2jJQmAgWIiJa8Vk=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
@@ -136,7 +136,19 @@
 
 </div>
   </header> 
-  <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+  <div class="post-content md-content"><h1 id="cracking-ntlms">Cracking NTLMs<a hidden class="anchor" aria-hidden="true" href="#cracking-ntlms">#</a></h1>
+<blockquote>
+<p>Should be here or a part by itself?</p>
+</blockquote>
+<ul>
+<li>using multiple runs of hashcat</li>
+<li>rockyou → rockyou + rules → weakpass_4a → weakpass_4a + rules</li>
+<li>Is this the best way for our restricted time?</li>
+<li>Can we do a better job since we can leave it running in out-of-work hours for at least 3-4 days?</li>
+<li>We don’t utilise sessions, could that help?</li>
+<li>Is it this how actual attackers would try to crack?</li>
+</ul>
+<h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
 <h1 id="cracked-hashes-analysis">Cracked Hashes Analysis<a hidden class="anchor" aria-hidden="true" href="#cracked-hashes-analysis">#</a></h1>
 <ul>
 <li>Statistical analysis tools</li>

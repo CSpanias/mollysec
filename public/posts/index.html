@@ -10,7 +10,7 @@
 <meta name="description" content="Posts - mollysec">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.1c1617080dbb6ae5add8442d3b25f09bd9648100e3da325098081622225af159.css" integrity="sha256-HBYXCA27auWt2EQtOyXwm9lkgQDj2jJQmAgWIiJa8Vk=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
@@ -123,6 +123,29 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">Password Audits Part 2: Hash Organisation
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Introduction In Part 1, we talked about how we can extract credentials from NTDS using DCSync and VSS. Now, it is time to think how to best handle the NTDS file. Although, extracting NTDS from the DC might be the last step of a CTF, it is just the first one during the password audit process:
+Extract NTDS → Clean/Organise NTDS → Crack hashes → Generate stats.
+The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from NTDS and extract it. This article will be mostly myself thinking out loud as of why we need or don’t need certain elements from the NTDS.
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-05-17 00:00:00 +0000 UTC'>May 17, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
+  <a class="entry-link" aria-label="post link to Password Audits Part 2: Hash Organisation" href="http://localhost:1313/posts/password-audits-part-2/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">My Take on CAPE
     </h2>
   </header>
@@ -149,34 +172,13 @@ For instance, my biggest concern after reading them was evasion, as this is one 
     </h2>
   </header>
   <div class="entry-content">
-    <p>Introduction Cracked Hashes Analysis Statistical analysis tools a custom version of pwdlyzer (6 years old) a bit finicky, but outputs what we need for the custom reporting platform that is XLM files mapped to the platforms findings and stock text for each section of the finding Is there any other modern tool we can use for that? I currently used -D 2 -O to use both GPUs and optimised kernels. Is this the best optimisation? Reporting We report common stats, such as DA passwords, pass reuse, common words, etc. Add % cracked per hashcat run to demonstrate pass strength? Benchmarks against standards? Verizon’s Data Breach Investigations Report SocinumSecure’s credential review reports Meta-analyses can KnowBe4’s WPT tool be of any use? is worth “comparing” to popular frameworks such as NIST, NCSC, etc? Report generation and findings presentation Recommendations and remediation guidance </p>
+    <p>Cracking NTLMs Should be here or a part by itself?
+using multiple runs of hashcat rockyou → rockyou &#43; rules → weakpass_4a → weakpass_4a &#43; rules Is this the best way for our restricted time? Can we do a better job since we can leave it running in out-of-work hours for at least 3-4 days? We don’t utilise sessions, could that help? Is it this how actual attackers would try to crack? Introduction Cracked Hashes Analysis Statistical analysis tools a custom version of pwdlyzer (6 years old) a bit finicky, but outputs what we need for the custom reporting platform that is XLM files mapped to the platforms findings and stock text for each section of the finding Is there any other modern tool we can use for that? I currently used -D 2 -O to use both GPUs and optimised kernels. Is this the best optimisation? Reporting We report common stats, such as DA passwords, pass reuse, common words, etc. Add % cracked per hashcat run to demonstrate pass strength? Benchmarks against standards? Verizon’s Data Breach Investigations Report SocinumSecure’s credential review reports Meta-analyses can KnowBe4’s WPT tool be of any use? is worth “comparing” to popular frameworks such as NIST, NCSC, etc? Report generation and findings presentation Recommendations and remediation guidance </p>
   </div>
   <footer class="entry-footer">
 
 <span title='2026-03-15 00:00:00 +0000 UTC'>March 15, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
   <a class="entry-link" aria-label="post link to Password Audits Part 3: Hash Analysis" href="http://localhost:1313/posts/password-audits-part-3/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">Password Audits Part 2: Hash Organisation
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>Introduction With NTDS.dit and the SYSTEM hive successfully extracted, we’re ready to proceed to the password cracking phase. The next section of this guide will cover hash extraction from the NTDS database, optimal Hashcat configuration for password auditing, and analysis techniques for identifying systemic password weaknesses in the organization.
-Organising secrets How the current tool (secretsorganise) works exactly? Are there other open-source tools that are better? If not, can we make it better? We crack the [ALL]-[NTLM].txt file that outputs Output Handling and Organization Regardless of extraction method, we need to organize output files for efficient downstream processing. A standardized directory structure prevents confusion during multi-DC extractions and long-duration engagements.
-...</p>
-  </div>
-  <footer class="entry-footer">
-
-<span title='2026-03-14 00:00:00 +0000 UTC'>March 14, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
-  <a class="entry-link" aria-label="post link to Password Audits Part 2: Hash Organisation" href="http://localhost:1313/posts/password-audits-part-2/"></a>
 </article>
 
 <article class="post-entry"> 

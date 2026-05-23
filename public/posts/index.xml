@@ -6,8 +6,15 @@
     <description>Recent content in Posts on mollysec</description>
     <generator>Hugo</generator>
     <language>en-gb</language>
-    <lastBuildDate>Tue, 12 May 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 17 May 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Password Audits Part 2: Hash Organisation</title>
+      <link>http://localhost:1313/posts/password-audits-part-2/</link>
+      <pubDate>Sun, 17 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-2/</guid>
+      <description>Fine-tuning secretsdump output.</description>
+    </item>
     <item>
       <title>My Take on CAPE</title>
       <link>http://localhost:1313/posts/cape-review/</link>
@@ -21,13 +28,6 @@
       <pubDate>Sun, 15 Mar 2026 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
       <description>Article focusing the process of recovering hashes extracted from the NTDS.dit file (Active Directory&amp;#39;s database), during the password audit process.</description>
-    </item>
-    <item>
-      <title>Password Audits Part 2: Hash Organisation</title>
-      <link>http://localhost:1313/posts/password-audits-part-2/</link>
-      <pubDate>Sat, 14 Mar 2026 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/password-audits-part-2/</guid>
-      <description>Article focusing the process of organizing the hashes extracted from the NTDS.dit file (Active Directory&amp;#39;s database), during the password audit process.</description>
     </item>
     <item>
       <title>NTDS Extraction Methods</title>
