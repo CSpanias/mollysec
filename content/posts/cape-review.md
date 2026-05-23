@@ -123,7 +123,7 @@ The below boxes are good for "warm up", i.e., you should feel pretty comfortable
 | [Phantom](https://www.hackthebox.com/machines/Phantom) | Medium | Password Spray, RBCD |
 | [Redelegate](https://www.hackthebox.com/machines/Redelegate) | Hard | BFA, ACL-Based Enum, Constrained Delegation |
 
-These boxes aren't too hard either, but they can be a challenge if your notes are missing a few things:
+The next list of boxes isn't too hard either, but they can be a challenge if your notes are missing a few things:
 
 | Box | Rating | Relevancy |
 | --- | ------ | --------- |
