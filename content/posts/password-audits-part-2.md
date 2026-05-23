@@ -12,7 +12,7 @@ draft: false
 
 # Introduction
 
-In [Part 1](/posts/password-audits-part-1/), we talked about how we can extract credentials from `NTDS` using [DCSync](/posts/password-audits-part-1/#dcsync-via-drsuapi) and [VSS](/posts/password-audits-part-1/#vss). Now, it is time to think how to best handle the `NTDS` file. Extracting `NTDS` is typically the last step in a CTF, but it is just the first one here:
+In [Part 1](/posts/password-audits-part-1/), we talked about how we can extract credentials from `NTDS` using [DCSync](/posts/password-audits-part-1/#dcsync-via-drsuapi) and [VSS](/posts/password-audits-part-1/#vss). Now, it is time to think about how to best handle the `NTDS` file. Extracting `NTDS` is typically the last step in a CTF, but it is just the first one here:
 
 ---
 ~~Extract NTDS~~ &rarr; **Clean/Organise NTDS** &rarr; Crack hashes &rarr; Generate stats.  
@@ -23,7 +23,7 @@ The good news is that this part is technically much simpler; no need to talk abo
 
 This article will be mostly myself thinking out loud as of why we need or don't need certain elements. While reading this, make sure to keep in mind my [fair warning](../about/#why-mollysec); it is there for a reason!
 
-At the end of this, I will try to "create" (i.e., vibe-code) a minimal bash-based script to automate the whole process. It will be so simple, that even I will be wondering why did I even vibe-code it. But its 2026, so why not?
+At the end of this, I will try to "create" (i.e., vibe-code) a minimal bash-based script to automate the whole process. It will be so simple, that even I will be wondering why I even vibe-coded it. But its 2026, so why not?
 
 {{<figure 
     src="/images/vibe-coding-check.png"
@@ -61,7 +61,7 @@ Although, LM is considered the "[*grandpa of authentication*](https://learn.micr
 
 # Filtering NTDS
 
-At this point, we want to only keep data that represents actual risk within the domain. Therefore, we will try removing anything that be considered as noise.
+At this point, we want to keep only data that represents actual risk within the domain and remove anything that introduces noise.
 
 As a Proof of Concept (PoC), I will use an expanded version of the NTDS from Hack The Box's [Puppy](https://www.hackthebox.com/machines/puppy) machine. The original one did not contain any LM hashes and I also needed to add some testing-related accounts (you will understand why a bit later) so I had to add those.
 
@@ -99,7 +99,7 @@ PUPPY.HTB\levi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a30939954
 PUPPY.HTB\ant.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d2b34f438058b:::
 ```
 
-Besides disabled accounts, machine accounts (e.g. `DC01$`) can be excluded as well. These typically have Windows-generated (long and automatically rotated) passwords, which are practically non-crackable. Let's seperate them from the user accounts:
+Besides disabled accounts, machine accounts (e.g. `DC01$`) can be excluded as well. These typically have Windows-generated (long and automatically rotated) passwords, which are practically non-crackable. Let's separate them from the user accounts:
 
 ```bash
 # Extract machine accounts
@@ -140,7 +140,7 @@ $ grep -vi 'mollysec' ntds-user-accounts > ntds-user-accounts-clean
 We now have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this stage, we can split the NTLM hashes into two parts: NT and LM. Keep in mind that the presence of LM hashes is a finding by itself!
 
 ```bash
-# Extract NTML hashes
+# Extract NTLM hashes
 $ cut -d ':' -f4 ntds-user-accounts-clean | sort -u > ntds-ntlm-hashes
 
 # Check output
@@ -188,7 +188,7 @@ At this point, I think we can all agree that none of the individual steps was pa
 
 # Vibe-Coding
 
-The goal here is not to create the next [build-you-own-x](https://github.com/codecrafters-io/build-your-own-x) repo, but simply convert the above process into a minimal bash-based PoC that no person that respects themselves will ever use. 
+The goal here is not to create the next [build-you-own-x](https://github.com/codecrafters-io/build-your-own-x) repo, but simply convert the above process into a minimal bash-based PoC that no one that respects themselves will ever use. 
 
 {{<figure 
     src="/images/unpopular.gif"
@@ -247,7 +247,7 @@ hash-organiser/
 1 directory, 7 files
 ```
 
-All expected files have been generated successfully and their content matches the format what we expect:
+All expected files have been generated successfully and their content matches the format we expect:
 
 ```bash
 $ for file in $(ls hash-organiser); do echo -e "Reading file: $file\n"; head -n3 hash-organiser/$file; echo -e "\n"; done
@@ -301,7 +301,9 @@ Reading file: ntlm-hashes.txt
 
 # Conclusion
 
-We now have our NTDS file processed and two clean datasets ready for cracking: `ntlm-hashes.txt` and `lm-hashes.txt`. In the next part, we will try to recover them using [Hashcat](https://github.com/hashcat/hashcat). We will start manually, and then we will vibe-code a script to automate the process, just like we did here.
+We now have our NTDS file processed and two clean datasets ready for cracking: `ntlm-hashes.txt` and `lm-hashes.txt`.
+
+In the next part, we will focus on recovering plaintext passwords using [Hashcat](https://github.com/hashcat/hashcat); first manually, and then by vibe-coding a script to automate the process, just like we did here.
 
 **Next:** [Password Audits Part 3: Cracking Hashes →]
 <!-- (/posts/password-audits-part-3/) -->
