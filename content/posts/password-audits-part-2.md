@@ -190,9 +190,7 @@ The goal is not to create the next 10k star GitHub repo, but simply convert the 
 
 # Vibe-Coding
 
-Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser)! I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here!
-
-You might see that the final script includes some optional stuff that we haven't talked about, but you can just ignore those for now:
+Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser)! I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! The final script includes some optional stuff that we haven't talked about, but you can just ignore those for now:
 
 ```bash
 $ ./hash-organiser.sh
@@ -226,11 +224,7 @@ $ ./hash-organiser.sh --ntds puppy.htb.ntds.expanded
 
 [✔] Completed
 [+] Output: hash-organiser
-```
 
-All required files seem to have been generated:
-
-```bash
 $ tree hash-organiser/
 hash-organiser/
 ├── lm-hashes.txt
@@ -243,6 +237,8 @@ hash-organiser/
 
 1 directory, 7 files
 ```
+
+All expected files have been generated successfully. Let’s now inspect each of them to verify that everything looks correct and that the format matches what we expect:
 
 ```bash
 $ for file in $(ls hash-organiser); do echo -e "Reading file: $file\n"; head -n3 hash-organiser/$file; echo -e "\n"; done
@@ -296,9 +292,7 @@ Reading file: ntlm-hashes.txt
 
 # Conclusion
 
-We now have our NTDS file processed and two clean datasets ready for cracking: NT hashes and LM hashes.
+We now have our NTDS file processed and two clean datasets ready for cracking: `ntlm-hashes.txt` and `lm-hashes.txt`. In the next part, we will try to recover them using [Hashcat](https://github.com/hashcat/hashcat). We will start manually, and then we will vibe-code a script to automate the process, just like we did here.
 
-In the next part, we will focus on recovering plaintext passwords using [Hashcat](https://github.com/hashcat/hashcat); first manually to understand the process, and then by automating it with vibe-coding, just like we did here.
-
-**Next:** [Password Audits Part 3: Hash Analysis →]
+**Next:** [Password Audits Part 3: Cracking Hashes →]
 <!-- (/posts/password-audits-part-3/) -->

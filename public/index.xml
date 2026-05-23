@@ -23,20 +23,6 @@
       <description>My experience taking Hack the Box&amp;#39;s Certified Active Directory Pentesting Expert Exam.</description>
     </item>
     <item>
-      <title>Password Audits Part 3: Hash Analysis</title>
-      <link>http://localhost:1313/posts/password-audits-part-3/</link>
-      <pubDate>Sun, 15 Mar 2026 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
-      <description>Article focusing the process of recovering hashes extracted from the NTDS.dit file (Active Directory&amp;#39;s database), during the password audit process.</description>
-    </item>
-    <item>
-      <title>NTDS Extraction Methods</title>
-      <link>http://localhost:1313/posts/password-audits-part-1-extra/</link>
-      <pubDate>Fri, 13 Mar 2026 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/password-audits-part-1-extra/</guid>
-      <description>Article focusing the process of NTDS.dit file, Active Directory&amp;#39;s database, during the password audit process.</description>
-    </item>
-    <item>
       <title>Password Audits Part 1: NTDS Extraction</title>
       <link>http://localhost:1313/posts/password-audits-part-1/</link>
       <pubDate>Fri, 13 Mar 2026 00:00:00 +0000</pubDate>

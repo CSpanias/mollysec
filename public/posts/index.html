@@ -124,18 +124,12 @@
 <article class="post-entry"> 
   <header class="entry-header">
     <h2 class="entry-hint-parent">Password Audits Part 2: Hash Organisation
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
     </h2>
   </header>
   <div class="entry-content">
     <p>Introduction In Part 1, we talked about how we can extract credentials from NTDS using DCSync and VSS. Now, it is time to think how to best handle the NTDS file. Extracting NTDS is typically the last step in a CTF, but it is just the first one here:
 Extract NTDS → Clean/Organise NTDS → Crack hashes → Generate stats.
-The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from NTDS and extract it. This article will be mostly myself thinking out loud as of why we need or don’t need certain elements.
+The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from NTDS and extract it.
 ...</p>
   </div>
   <footer class="entry-footer">
@@ -158,48 +152,6 @@ For instance, my biggest concern after reading them was evasion, as this is one 
 
 <span title='2026-05-12 00:00:00 +0000 UTC'>May 12, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
   <a class="entry-link" aria-label="post link to My Take on CAPE" href="http://localhost:1313/posts/cape-review/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">Password Audits Part 3: Hash Analysis
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>Cracking NTLMs Should be here or a part by itself?
-using multiple runs of hashcat rockyou → rockyou &#43; rules → weakpass_4a → weakpass_4a &#43; rules Is this the best way for our restricted time? Can we do a better job since we can leave it running in out-of-work hours for at least 3-4 days? We don’t utilise sessions, could that help? Is it this how actual attackers would try to crack? Introduction Cracked Hashes Analysis Statistical analysis tools a custom version of pwdlyzer (6 years old) a bit finicky, but outputs what we need for the custom reporting platform that is XLM files mapped to the platforms findings and stock text for each section of the finding Is there any other modern tool we can use for that? I currently used -D 2 -O to use both GPUs and optimised kernels. Is this the best optimisation? Reporting We report common stats, such as DA passwords, pass reuse, common words, etc. Add % cracked per hashcat run to demonstrate pass strength? Benchmarks against standards? Verizon’s Data Breach Investigations Report SocinumSecure’s credential review reports Meta-analyses can KnowBe4’s WPT tool be of any use? is worth “comparing” to popular frameworks such as NIST, NCSC, etc? Report generation and findings presentation Recommendations and remediation guidance </p>
-  </div>
-  <footer class="entry-footer">
-
-<span title='2026-03-15 00:00:00 +0000 UTC'>March 15, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
-  <a class="entry-link" aria-label="post link to Password Audits Part 3: Hash Analysis" href="http://localhost:1313/posts/password-audits-part-3/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">NTDS Extraction Methods
-      <span class="entry-hint" title="Draft">
-        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
-          <path
-            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
-        </svg>
-      </span>
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>Comparison Matrix (Audit-Relevant Methods) Method Speed DC Impact Network Traffic Disk Space (DC) DRSUAPI Fast (minutes) Minimal Low (~100MB) None VSS/NTDSUTIL Medium (15-30min) Low High (10GB&#43;) Temporary (~10GB) VSS/WMI Medium (15-30min) Low High (10GB&#43;) Temporary (~10GB) Kerb-Key-List Fast (minutes) Minimal Low None The real difference: -use-vss: Uses ntdsutil.exe (Microsoft’s official AD backup tool) to create an IFM export, which internally uses shadow copies -use-remoteSSWMI-NTDS: Uses vssadmin.exe via WMI to directly create and access shadow copies
-...</p>
-  </div>
-  <footer class="entry-footer">
-
-<span title='2026-03-13 00:00:00 +0000 UTC'>March 13, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
-  <a class="entry-link" aria-label="post link to NTDS Extraction Methods" href="http://localhost:1313/posts/password-audits-part-1-extra/"></a>
 </article>
 
 <article class="post-entry"> 

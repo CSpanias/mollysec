@@ -1,8 +1,8 @@
 ---
-title: "Password Audits Part 3: Hash Analysis"
-date: 2026-03-15
+title: "Password Audits Part 3: Cracking Hashes"
+date: 2026-05-26
 author: "mollysec"
-description: "Article focusing the process of recovering hashes extracted from the NTDS.dit file (Active Directory's database), during the password audit process."
+description: "Cracking NTLM hashes in real world."
 featured: true
 tags: [
 ]
@@ -10,7 +10,7 @@ categories: [
 
 ]
 series: "Password Audits"
-thumbnail: "/images/password-audits-part-3-thumbnail.jpg"
+thumbnail: ""
 draft: true
 ---
 
