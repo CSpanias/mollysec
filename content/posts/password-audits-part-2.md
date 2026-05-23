@@ -7,7 +7,7 @@ featured: true
 tags: []
 categories: []
 series: "Password Audits"
-draft: true
+draft: false
 ---
 
 # Introduction
@@ -61,6 +61,8 @@ Nevertheless, besides the fact that LM is considered the "[*grandpa of authentic
 
 # Filtering NTDS
 
+At this point, we want to only keep data that represents actual risk within the domain. Therefore, we will try removing anything that be considered as noise.
+
 As a Proof of Concept (PoC), I will use an expanded version of the NTDS from Hack The Box's [Puppy](https://www.hackthebox.com/machines/puppy) machine. The original one did not contain any LM hashes and I also needed to add some testing-related accounts (you will understand why a bit later) so I had to add those.
 
 So let's start with the NTDS extraction command. Our goal is to assess the domain, therefore, we only need:
@@ -101,10 +103,10 @@ Besides disabled accounts, machine accounts (e.g. `DC01$`) can be excluded as we
 
 ```bash
 # Extract machine accounts
-$ awk -F ':' '$1 ~ /\$$/' ntds-enabled > ntds-machine-accounts
+$ awk -F ':' '$1 ~ /\$$/' ntds-enabled > ntds-machines
 
 # Check output
-$ head -n5 ntds-machine-accounts
+$ head -n5 ntds-machines
 DC$:1000:aad3b435b51404eeaad3b435b51404ee:d5047916131e6ba897f975fc5f19c8df:::
 SQL01$:1000:aad3b435b51404eeaad3b435b51404ee:d5047916131e6ba897f975fc5f19c8df:::
 
@@ -135,7 +137,7 @@ PUPPY.HTB\mollysec-admin:1108:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117a
 $ grep -vi 'mollysec' ntds-user-accounts > ntds-user-accounts-clean
 ```
 
-We now have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this point, we can split the NTLM hashes into two parts: NT and LM (these are cracked with different modes). Finding a domain that uses LM hashes is a finding by itself!
+We now have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this stage, we can split the NTLM hashes into two parts: NT and LM. Keep in mind that the presence of LM hashes is a finding by itself!
 
 ```bash
 # Extract NTML hashes
@@ -173,20 +175,22 @@ $ ls -lh ntds-*
 -rw-r--r-- 1 mollysec mollysec 2.1K May 19 19:37 ntds-enabled
 -rw-r--r-- 1 mollysec mollysec   99 May 19 19:39 ntds-lm-hashes
 -rw-r--r-- 1 mollysec mollysec  289 May 19 19:38 ntds-lm-hashes-full
--rw-r--r-- 1 mollysec mollysec  159 May 19 19:35 ntds-machine-accounts
+-rw-r--r-- 1 mollysec mollysec  159 May 19 19:35 ntds-machines
 -rw-r--r-- 1 mollysec mollysec  330 May 19 19:38 ntds-ntlm-hashes
 -rw-r--r-- 1 mollysec mollysec  197 May 19 19:38 ntds-testing-accounts
 -rw-r--r-- 1 mollysec mollysec 1.9K May 19 19:37 ntds-user-accounts
 -rw-r--r-- 1 mollysec mollysec 1.7K May 19 19:38 ntds-user-accounts-clean
 ```
 
-The important thing for now, is that we have two ready-to-be-cracked files: `ntds-ntlm-hashes` and `ntds-lm-hashes`. You might be wondering any cracked hash will be associated back with its user, but that's pretty straightforward to do. We will see how this can be done in Part 4.
+The important thing for now, is that we have two ready-to-be-cracked files: `ntds-ntlm-hashes` and `ntds-lm-hashes`. You might be wondering how the cracked hashes will be "glued" back to their users, but we will talk about that in Part 4.
 
-At this point, I think we can all agree that none of the individual steps was particularly complex in the above process. So it's time to automate it. The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use.
+At this point, I think we can all agree that none of the individual steps was particularly complex in the above process. However, repeating the process manually would be tedious and could introduce errors. So let's automate it.
+
+The goal is not to create the next 10k star GitHub repo, but simply convert the above process into a minimal bash-based tool for our own ease of use.
 
 # Vibe-Coding
 
-Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser)! I literally just passed the above info to Copilot and asked him to create a simple bash script; I am sure that pretty much everyone can produce something better than the generated result.
+Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser)! I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here!
 
 You might see that the final script includes some optional stuff that we haven't talked about, but you can just ignore those for now:
 
@@ -292,7 +296,9 @@ Reading file: ntlm-hashes.txt
 
 # Conclusion
 
-WIP
+We now have our NTDS file processed and two clean datasets ready for cracking: NT hashes and LM hashes.
+
+In the next part, we will focus on recovering plaintext passwords using [Hashcat](https://github.com/hashcat/hashcat); first manually to understand the process, and then by automating it with vibe-coding, just like we did here.
 
 **Next:** [Password Audits Part 3: Hash Analysis →]
 <!-- (/posts/password-audits-part-3/) -->
