@@ -137,7 +137,7 @@ PUPPY.HTB\mollysec-admin:1108:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117a
 $ grep -vi 'mollysec' ntds-user-accounts > ntds-user-accounts-clean
 ```
 
-We now have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this stage, we can split the NTLM hashes into two parts: NT and LM. Keep in mind that the presence of LM hashes is a finding by itself!
+We now have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this stage, we can split the NTLM hashes into two parts: NT and LM (the mere presence of LM hashes is a finding by itself!):
 
 ```bash
 # Extract NTLM hashes
