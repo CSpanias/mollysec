@@ -19,9 +19,9 @@ In [Part 1](/posts/password-audits-part-1/), we talked about how we can extract 
 
 ---
 
-The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from `NTDS` and extract it. This article will be mostly myself thinking out loud as of why we need or don't need certain elements.
+The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from `NTDS` and extract it. 
 
-While reading this, make sure to keep in mind my [fair warning](../about/#why-mollysec); it is there for a reason!
+This article will be mostly myself thinking out loud as of why we need or don't need certain elements. While reading this, make sure to keep in mind my [fair warning](../about/#why-mollysec); it is there for a reason!
 
 At the end of this, I will try to "create" (i.e., vibe-code) a minimal bash-based script to automate the whole process. It will be so simple, that even I will be wondering why did I even vibe-code it. But its 2026, so why not?
 
@@ -120,7 +120,7 @@ PUPPY.HTB\ant.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d
 
 Next, we need to get rid of the testing accounts. The client usually provides us with two accounts: a normal user account and a Domain Admin account. These have different naming conventions for each company, but almost always include a testing-related string, for example, 'test' or the company's name. Let's say our company is called MollySec and that the provided accounts are `mollysec_user` and `mollysec-admin`.
 
-It makes sense to remove them as these are temporary accounts (or at least they should be!) created by the client just for us and not actual domain users. Imagine delivering a report to the client claiming that we recovered X% of their DA accounts while including our own testing account in. That would be naugthy!
+It makes sense to remove them as these are temporary accounts (or at least they should be!) created by the client just for us and not actual domain users. Imagine delivering a report to the client claiming that we recovered X% of their DA accounts while including our own testing account in. That sounds wrong, doesn't it?
 
 ```bash
 # Extract the testing accounts
@@ -135,7 +135,7 @@ PUPPY.HTB\mollysec-admin:1108:aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117a
 $ grep -vi 'mollysec' ntds-user-accounts > ntds-user-accounts-clean
 ```
 
-So far, so good. We have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this point, we can split the NTLM hashes into two parts: NT and LM as we will need to use different hashcat modes for each. In addition, finding a domain that uses LM hashes is a finding by itself!
+We now have our "main" file (`ntds-user-accounts-clean`) that includes **enabled**, **non-testing**, **user accounts**. At this point, we can split the NTLM hashes into two parts: NT and LM (these are cracked with different modes). Finding a domain that uses LM hashes is a finding by itself!
 
 ```bash
 # Extract NTML hashes
@@ -186,14 +186,109 @@ At this point, I think we can all agree that none of the individual steps was pa
 
 # Vibe-Coding
 
-Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser); I am sure you can do much better than the generated result!
+Well, I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser)! I literally just passed the above info to Copilot and asked him to create a simple bash script; I am sure that pretty much everyone can produce something better than the generated result.
 
-{{<figure 
-    src="/images/expectations-can-only-lead-to-disappointment.gif"
-    alt="WilDasovich saying 'Expectations can only lead to disappointment'."
-    width="500"
-    caption=""
->}}
+You might see that the final script includes some optional stuff that we haven't talked about, but you can just ignore those for now:
+
+```bash
+$ ./hash-organiser.sh
+Hash Organiser v1.0
+
+Usage:
+  ./hash-organiser.sh -n <ntds_file> [options]
+
+Options:
+  -n, --ntds     NTDS dump file (required)
+  -u, --users    BloodHound users JSON (optional)
+  -o, --output   Output directory (default: hash-organiser)
+  -f, --filter   Filter pattern (e.g. 'test|company')
+  -p, --potfile  Hashcat potfile (optional)
+  -h, --help     Show this help
+```
+
+Let's test it out:
+
+```bash
+$ ./hash-organiser.sh --ntds puppy.htb.ntds.expanded
+[*] Hash Organiser v1.0 starting...
+[+] Output directory: hash-organiser
+
+[*] Processing NTDS...
+[+] Users retained: 20
+[+] NTLM hashes extracted
+    → hash-organiser/ntlm-hashes.txt
+[!] LM hashes detected
+    → hash-organiser/lm-hashes.txt
+
+[✔] Completed
+[+] Output: hash-organiser
+```
+
+All required files seem to have been generated:
+
+```bash
+$ tree hash-organiser/
+hash-organiser/
+├── lm-hashes.txt
+├── lm-users.txt
+├── ntds-disabled.txt
+├── ntds-enabled.txt
+├── ntds-machines.txt
+├── ntds-users-clean.txt
+└── ntlm-hashes.txt
+
+1 directory, 7 files
+```
+
+```bash
+$ for file in $(ls hash-organiser); do echo -e "Reading file: $file\n"; head -n3 hash-organiser/$file; echo -e "\n"; done
+Reading file: lm-hashes.txt
+
+4a3b108f3fa6cb6d22aad3b435b51404
+bcb2335c8c5a3ae691aab0a6e6c3d5c5
+e52cac67419a9a224a3b108f3fa6cb6d
+
+
+Reading file: lm-users.txt
+
+PUPPY.HTB\legacy.user1:1401:e52cac67419a9a224a3b108f3fa6cb6d:8846f7eaee8fb117ad06bdd830b7586c:::
+PUPPY.HTB\legacy.user2:1402:bcb2335c8c5a3ae691aab0a6e6c3d5c5:32ed87bdb5fdc5e9cba88547376818d4:::
+PUPPY.HTB\svc_legacy:1403:4a3b108f3fa6cb6d22aad3b435b51404:5fbc3d5fec8206a30f4b6c473d68ae76:::
+
+
+Reading file: ntds-disabled.txt
+
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:a4f2989236a639ef3f766e5fe1aad94a:::
+PUPPY.HTB\adam.silver:1105:aad3b435b51404eeaad3b435b51404ee:a7d7c07487ba2a4b32fb1d0953812d66:::
+
+
+Reading file: ntds-enabled.txt
+
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:bb0edc15e49ceb4120c7bd7e6e65d75b:::
+PUPPY.HTB\levi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a3093995466570f435b8:::
+PUPPY.HTB\ant.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d2b34f438058b:::
+
+
+Reading file: ntds-machines.txt
+
+DC$:1000:aad3b435b51404eeaad3b435b51404ee:d5047916131e6ba897f975fc5f19c8df:::
+SQL01$:1000:aad3b435b51404eeaad3b435b51404ee:d5047916131e6ba897f975fc5f19c8df:::
+
+
+Reading file: ntds-users-clean.txt
+
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:bb0edc15e49ceb4120c7bd7e6e65d75b:::
+PUPPY.HTB\levi.james:1103:aad3b435b51404eeaad3b435b51404ee:ff4269fdf7e4a3093995466570f435b8:::
+PUPPY.HTB\ant.edwards:1104:aad3b435b51404eeaad3b435b51404ee:afac881b79a524c8e99d2b34f438058b:::
+
+
+Reading file: ntlm-hashes.txt
+
+32ed87bdb5fdc5e9cba88547376818d4
+3c59dc048e8850243be8079a5c74d079
+5fbc3d5fec8206a30f4b6c473d68ae76
+```
 
 # Conclusion
 
