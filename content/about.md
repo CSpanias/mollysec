@@ -7,18 +7,14 @@ showPostMeta: false
 
 # Who Am I?
 
-I'm a penetration tester who gets frustrated by "just because" answers. I want to understand how things work and then figure out how to make them better.
+I am a penetester who tries to understand how things work and figure out how to make them better. Currently, my focus revolves mostly around Active Directory. I'm working towards a Diploma (who knows, maybe a BSc!) in Cybersecurity, and I've picked up a few industry certifications along the way, including [OSWA](https://www.offsec.com/courses/web-200/), [OSCP](https://www.offsec.com/courses/pen-200/), [CRTP](https://www.alteredsecurity.com/adlab), and [CAPE](https://academy.hackthebox.com/preview/certifications/htb-certified-active-directory-pentesting-expert).
 
-Currently, I work as a security consultant and I'm currently diving into AD-related stuff. Before this, I spent a couple of years in Fintech as an internal pentester.
-
-I'm working towards a Diploma (who knows, maybe a BSc!) in Cybersecurity, and I've picked up a few industry certifications along the way, including the OSCP, CRTP, and CAPE.
+I've only been in this field since early 2024, so expect a good amount of inaccuracies in my posts. That said, I'm always open to discussion and critical feedback if you spot something worth correcting or exploring further.
 
 # Why mollysec?
 
-I've been keeping my notes organized at [x7331.gitbook.io](https://x7331.gitbook.io/boxes) for a while now which has worked quite well so far as a reference guide. But I found myself wanting to dig deeper into certain topics, and Gitbook just wasn't the right format for that kind of content.
+I have been keeping my notes organized at [x7331.gitbook.io](https://x7331.gitbook.io/boxes) for a while now, and it has worked quite well as a reference guide. But I found myself wanting to dive deeper on certain topics, and Gitbook just wasn't the right format for that kind of content.
 
-So I created this space to explore subjects I'm genuinely interested in and want to understand at a deeper level.
+This space, mollysec, is my attempt to address that. To serve as a place where I can write about areas I am interested in and actively learning about in more flexible format.
 
-**Fair warning**: I've only been in this field since early 2024, so there will likely be inaccuracies in my posts. I'm documenting thoughts as I learn. That said, I'm always open to discussion and critical feedback if you spot something worth correcting or exploring further.
-
-Oh, and mollysec? That's named after my dog, Molly. As everyone knows, every good project needs a mascot!
+Oh, and mollysec? That's named after my dog, Molly! As everyone knows, every good project needs a mascot!
