@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Password Audits Part 3: Cracking Hashes | mollysec</title>
+<meta name="keywords" content="">
+<meta name="description" content="Cracking NTLM hashes in the real world.">
+<meta name="author" content="mollysec">
+<link rel="canonical" href="http://localhost:1313/posts/password-audits-part-3-asdf/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/password-audits-part-3-asdf/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="mollysec (Alt + H)">mollysec</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Password Audits Part 3: Cracking Hashes
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h1>
+    <div class="post-description">
+      Cracking NTLM hashes in the real world.
+    </div>
+    <div class="post-meta">
+
+<span title='2026-05-23 00:00:00 +0000 UTC'>May 23, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<blockquote>
+<p><em>If you feel like experimenting yourself, the NT hash dataset can be generated using <a href="https://github.com/CSpanias/pass-audit-tools/blob/main/generate-5k-nt-hashes.py">this</a> creatively-named script.</em></p>
+</blockquote>
+<p>In <a href="/posts/password-audits-part-1/">Part 1</a> we retrieved NTDS and in <a href="/posts/password-audits-part-2/">Part 2</a> we organised it using <a href="https://github.com/CSpanias/hash-organiser"><code>hash-organiser</code></a>. We are now ready to move to the next part of the process: recovering hashes.</p>
+<hr>
+<p><del>Extract NTDS</del> → <del>Clean/Organise NTDS</del> → <strong>Crack hashes</strong> → Generate stats.</p>
+<hr>
+<p>&ldquo;Cracking hashes&rdquo; sounds a bit abstract, so let&rsquo;s try narrowing it down. At this stage, the goal is not to crack as many hashes as possible just because, but to identify weak passwords and patterns that represent real risk to the domain.</p>
+<p>First, let&rsquo;s remind ourselves some potential limitations we might have, so we can agree what is out of scope:</p>
+<ul>
+<li>Password auditing is just one part of an internal assessment, therefore, we can only allocate a <strong>limited amount of time</strong> to it. Creating OSINT-based custom wordlists is not an option here. Although there are some <a href="https://github.com/p0dalirius/pyLDAPWordlistHarvester">interesting tools</a> out there, to keep things simple, we will opt for using <strong>generic wordlists</strong> for now.</li>
+<li>Our weapon is an <strong>average-performance work laptop</strong> which we might have to use for other tasks in parallel with cracking. Thus, there is a good chance that we can&rsquo;t even dedicate the laptop&rsquo;s full resources to cracking.</li>
+</ul>
+<figure>
+    <img loading="lazy" src="/images/time-to-quit-hashcat.png"
+         alt="An image of a laptop on fire." width="600"/> 
+</figure>
+
+<p>Let&rsquo;s start by talking about some terminology before diving into the practical aspect.</p>
+<h1 id="hash-rate-keyspace-and-cracking-time">Hash Rate, Keyspace, and Cracking Time<a hidden class="anchor" aria-hidden="true" href="#hash-rate-keyspace-and-cracking-time">#</a></h1>
+<p>Before we start cracking on terminology (pun intended!), we need to make sure that we are <strong>running <a href="https://github.com/hashcat/hashcat">hashcat</a> on our native host utilising our GPU</strong>. The oversimplified reasoning for this is that more layers lead to more overhead which lead to less efficiency. If you are not convinced, have a look at the numbers below (Windows+GPU vs. WSL2+CPU):</p>
+<figure>
+    <img loading="lazy" src="/images/hashcat-ntlm-barebone-vm.png"
+         alt="A screenshot of hashcat&#39;s benchmark mode for NTLM hashes on Windows versus WSL2." width="950"/> 
+</figure>
+
+<p>The number highlighted above is the <strong>hash rate</strong> which translates to hash calculations per second. In our case:</p>
+<ul>
+<li>1 Megahash per second (MH/s) = 1,000,000 Hashes per second (H/s)</li>
+<li>38,451.7 MH/s x 1,000,000 = 38,451,700,000 H/s</li>
+</ul>
+<p>It is worth mentioning that the hash rate obtained through benchmarking (<code>-b</code>) <strong>measures only raw hashing</strong>, i.e., with the GPU 100% dedicated to hashing. Actual cracking involves generating candidates (reading wordlists, applying rules, handling rejections, etc.), which introduces significant overhead.</p>
+<p>In practice, the GPU spends part of its time waiting for new candidates instead of hashing continuously, so the effective speed drops significantly. For example, in our case, there is a <strong>~5x difference</strong> between the benchmark speed (~38,452 MH/s) and the actual hash rate (~7,969 MH/s) as we will soon see!</p>
+<p>Although we are interested mostly in NT hashes here, it is good to know that the hash rate is also affected by the format of the hash. For example, LM hashes are considerably weaker (easier to crack) than NT hashes, but the hash rate (on my setup) for LM is ~1.8x lower than that of NT (~23k MH/s vs. ~38k MH/s). This is due to the way <a href="https://learn.microsoft.com/en-us/windows-server/security/kerberos/passwords-technical-overview#passwords-stored-as-owf">LM hashing works internally</a>, which makes it less GPU-friendly:</p>
+<figure>
+    <img loading="lazy" src="/images/hashcat-lm-windows.png"
+         alt="A screenshot of hashcat&#39;s benchmark mode for LM hashes on Windows." width="600"/> 
+</figure>
+
+<p>The next term we care about is the <strong>keyspace</strong>, the total number of possible guesses. For instance:</p>
+<ul>
+<li>A run using a 10-word wordlist would only have to try these 10 words. Thus, the keyspace would be 10.</li>
+<li>Adding a 10-rule ruleset would increase the keyspace to 10 x 10 = 100 (10 rules applied to every password).</li>
+</ul>
+<figure>
+    <img loading="lazy" src="/images/hashcat-wordlist-rules-keyspace.png"
+         alt="A screenshot of hashcat showing how the keyspace is calculated." width="950"/> 
+</figure>
+
+<p>Dividing the keyspace by the hash rate give us the estimated <strong>cracking time</strong>. This represents the worst-case scenario, where every possible candidate must be tested. It assumes that either no hashes are recovered, or that any recovered hashes only appear at the very end of the candidate space (i.e. the last entry in the wordlist and/or the last rule applied).</p>
+<p>For example, the estimated cracking time using the above 10-word wordlist and 10-rule ruleset combination would assume that either no hashes will be recovered or every recovered hash will result to <code>nine9</code>, forcing an iteration of all possible candiates for every hash:</p>
+<ul>
+<li><code>zero0</code>, <code>zero1</code>, &hellip;, <code>zero8</code>, <code>zero9</code> (10 total candidates)</li>
+<li><code>one0</code>, &hellip;, <code>nine9</code> (90 total candidates)</li>
+<li><code>nine0</code>, <code>nine1</code>, &hellip;, <code>nine8</code>, <code>nine9</code> (100 total candidates)</li>
+</ul>
+<figure>
+    <img loading="lazy" src="/images/hashcat-worst-case-scenario.png"
+         alt="A screenshot of the records within the 10-word wordlist and the 10-rules ruleset used as an example." width="750"/> 
+</figure>
+
+<p>Let&rsquo;s estimate the cracking time for a more realistic example using the <a href="https://hashmob.net/resources/hashmob">small hashmob</a> wordlist at 14,949.9 kH/s:</p>
+<ul>
+<li>The wordlist contains 2,378,450 passwords which represents the <strong>keyspace</strong>.</li>
+<li>The <strong>hash rate</strong> is 14,949.9 kH/s × 1000 = 14,949,900 H/s.</li>
+<li>The estimated <strong>cracking time</strong> is 2,378,450 / 14,949,900 = ~0.16 milliseconds (ms).</li>
+</ul>
+<figure>
+    <img loading="lazy" src="/images/keyspace-small-list.png"
+         alt="A screenshot of a hashcat session." width="600"/> 
+</figure>
+
+<p>As expected, the bigger the keyspace, the more time we will need to spend on cracking. For instance, if we throw some <a href="https://github.com/stealthsploit/OneRuleToRuleThemStill">rules</a> to the mix, the keyspace will increase from ~2,4 million to <strong>115+ billion guesses</strong>(!):</p>
+<ul>
+<li><strong>Keyspace</strong>: 2,378,450 (wordlist) × 48,439 (rules) = 115,150,278,300</li>
+<li><strong>Hash rate</strong>: 7,968.7 MH/s x 1,000,000 = 7,968,700,000 H/s</li>
+<li><strong>Cracking time</strong>: 115,150,278,300 / 7,968,700,000 = ~14.5 secs</li>
+</ul>
+<figure>
+    <img loading="lazy" src="/images/keyspace-small-list-plus-rule.png"
+         alt="A screenshot of a hashcat session." width="600"/> 
+</figure>
+
+<p>Now we are done with the theory, let&rsquo;s see how all these work in practice.</p>
+<figure>
+    <img loading="lazy" src="/images/theory-practice.png"
+         alt="An image of a kid with the text &#39;In theory there is no difference between theory and practice. In practice, there is.&#39;" width="600"/> 
+</figure>
+
+<h1 id="cracking-methodology">Cracking Methodology<a hidden class="anchor" aria-hidden="true" href="#cracking-methodology">#</a></h1>
+<h2 id="go-simple-go-big">Go Simple, Go Big<a hidden class="anchor" aria-hidden="true" href="#go-simple-go-big">#</a></h2>
+<p>The simplest way to crack our hashes is to grab a <a href="https://weakpass.com/wordlists/weakpass_4a.txt">large wordlist</a> along with a good ruleset and just let it run. The combination below has a keyspace of <strong>408+ trillion guesses</strong> and an estimated time of <strong>14 hours</strong>:</p>
+<figure>
+    <img loading="lazy" src="/images/hashcat-weakpass4a-plus-rule.png"
+         alt="A screenshot of a hashcat session." width="650"/> 
+</figure>
+
+<p>This approach requires <strong>minimal effort</strong> and it could be fitting if the plan is to leave the laptop working during out-of-work hours. When the run is done, we move directly to the next step by passing the potfile to our analysis tool.</p>
+<figure>
+    <img loading="lazy" src="/images/easy-peasy-lemon-squeezy.png"
+         alt="An image of a sloth lying on a tree branch with the text &#39;Easy peasy lemon squeezy&#39;." width="650"/> 
+</figure>
+
+<p>In this case, we can utilise hashcat <a href="https://hashcat.net/wiki/doku.php?id=restore">sessions</a> by leaving hashcat running overnight, create a checkpoint right before we need the laptop in the morning, and then resume the session when we no longer need it for the day:</p>
+<figure>
+    <img loading="lazy" src="/images/hashcat-sessions-example.png"
+         alt="A screenshot demonstrating how hashcat checkpoints work." width="950"/> 
+</figure>
+
+<p>One downside of this method is the assumption that <strong>all hashes are of equal strength</strong>. What if there are some extremely weak passwords that could be recovered with just a small wordlist and no rules at all in just a few seconds?</p>
+<h2 id="start-small-go-progressively-big">Start Small, Go (Progressively) Big<a hidden class="anchor" aria-hidden="true" href="#start-small-go-progressively-big">#</a></h2>
+<p>At first glance, this approach looks pretty straightforward, but I totally got the wrong idea when I first saw it.</p>
+<figure>
+    <img loading="lazy" src="/images/hashcat-run-diagram.png"
+         alt="A diagram of sequentially more expensive hashcat runs." width="1000"/> 
+</figure>
+
+<p>In my ignorant brain, this seemed as a smart approach because, for some unknown reason, I thought that by reducing the pool of hashes passed to the final run would somehow make it faster.</p>
+<figure>
+    <img loading="lazy" src="/images/a-little-confused-but-he-got-the-spirit.png"
+         alt="An image from a 1992 episode of Fresh Prince of Bel-Air which includes Will Smith&#39;s line, &#39;He a little confused, but he got the spirit&#39;." width="650"/> 
+</figure>
+
+<p>Let&rsquo;s see how dumb I was in practice. Below are four runs, each one more expensive than the previous:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Run</th>
+          <th>Wordlist Size</th>
+          <th>Keyspace (~)</th>
+          <th>Cracked Hashes</th>
+          <th>Total Cracked Hashes</th>
+          <th>Duration (hh:mm:ss)</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1</td>
+          <td>Small</td>
+          <td>115 Billion</td>
+          <td>7</td>
+          <td>7</td>
+          <td>00:00:15</td>
+      </tr>
+      <tr>
+          <td>2</td>
+          <td>Medium</td>
+          <td>709 Billion</td>
+          <td>31</td>
+          <td>38</td>
+          <td>00:01:31</td>
+      </tr>
+      <tr>
+          <td>3</td>
+          <td>Large</td>
+          <td>3 Trillion</td>
+          <td>242</td>
+          <td>280</td>
+          <td>00:06:30</td>
+      </tr>
+      <tr>
+          <td>4</td>
+          <td>Huge</td>
+          <td>120 Trillion</td>
+          <td>1,260</td>
+          <td>1,540</td>
+          <td>04:16:00</td>
+      </tr>
+      <tr>
+          <td><strong>Total</strong></td>
+          <td>-</td>
+          <td>-</td>
+          <td><strong>1,540</strong></td>
+          <td>-</td>
+          <td><strong>04:24:16</strong></td>
+      </tr>
+  </tbody>
+</table>
+<figure>
+    <img loading="lazy" src="/images/hashcat-synthetic-wordlists-and-rules.png"
+         alt="A screenshot containing four hashcat sessions." width="950"/> 
+</figure>
+
+<p>We managed to recover a total of 280 hashes during the first three runs, so we reduced the pool from 5k down to 4,720 hashes. So the 4<sup>th</sup> run should be faster now, right?</p>
+<p>To validate my ignorance, let&rsquo;s check what the numbers would be if I instead had run just the 4<sup>th</sup> run right away:</p>
+<figure>
+    <img loading="lazy" src="/images/hashcat-synthetic-wordlists-single-run.png"
+         alt="A screenshot of a hashcat session." width="650"/> 
+</figure>
+
+<p>Almost no difference! However, if you know what you are doing (unlike me), that&rsquo;s not really a surprise, but actually expected since <strong>cracking time is mostly driven by the size of the keyspace</strong> rather than the number of target hashes.</p>
+<p>In this case, since we used the exact same wordlist and ruleset, we ended up with the exact same keyspace: ~120 trillion guesses. Although a larger number of hashes increases comparison overhead, this cost is minor compared to the expense of generating and testing candidates, making its impact on overall runtime relatively small.</p>
+<p>From a time-optimisation perspective, the only benefit of the phased approach I could think of is when working towards a cap. For instance, if our goal is to crack x% of hashes as a PoC, we could try to achieve that before reaching the 4<sup>th</sup> step, i.e., completely avoiding running the expensive step altogether.</p>
+<p>But is there more to it than just runtime optimisation?</p>
+<h1 id="optimising-the-datasets-value">Optimising the Dataset&rsquo;s Value<a hidden class="anchor" aria-hidden="true" href="#optimising-the-datasets-value">#</a></h1>
+<p>So you might be wondering, why the <a href="https://www.dota2.com/hero/puck">puck</a> am I reading this?</p>
+<p>While this approach does not optimise runtime, it changes what we can learn from the cracking process.</p>
+<p>Think of it not from a time-optimisation but from <strong>information-optimisation</strong> perspective. If we stick to the first approach (Go Simple Go Big), we will get a single potfile showing that we recovered 30.8% of the hashes.</p>
+<p>But why not squeeze some more information from this step of the process?</p>
+<p>By running attacks in stages we could extract insights about user behaviour. For example, we could map each phase to approximate password strength categories based on the effort required to crack them:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Phase</th>
+          <th>Recovered Hashes</th>
+          <th>Password Strength</th>
+          <th><em>Remediation Priority</em></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1,2</td>
+          <td>38</td>
+          <td>Extremely Weak</td>
+          <td><em>Highest</em></td>
+      </tr>
+      <tr>
+          <td>3</td>
+          <td>242</td>
+          <td>Weak</td>
+          <td><em>High</em></td>
+      </tr>
+      <tr>
+          <td>4</td>
+          <td>1,260</td>
+          <td>Medium</td>
+          <td><em>Medium</em></td>
+      </tr>
+  </tbody>
+</table>
+<p>Generating stats based on the cracked hashes is the topic of Part 4, so I am not talking about that here. When we are on a client debrief and discussing the password audit phase, I have found an increased client engagement in presenting the results in a more &ldquo;interesting&rdquo; way rather than just showing them boiler-plate statistics.</p>
+<p>Which statement do you think has more chances to obtain buy-in from the client:</p>
+<blockquote>
+<p><em>We cracked 30% of the domain hashes.</em></p>
+</blockquote>
+<p>or:</p>
+<blockquote>
+<p><em>Six percent of the domain users are using extremely weak passwords that are vulnerable to low-effort attacks.</em></p>
+</blockquote>
+<p>In my opinion, the latter has more chances to make the client engaged in the conversation resulting in follow-up questions. This makes the discussion more interesting, makes me more motivated, and the client has a higher chance to come back, which makes the company I work for happier as well! A classic win-win-win situation.</p>
+<figure>
+    <img loading="lazy" src="/images/win-win-win-situation.png"
+         alt="A meme showing Steve Carell in Office saying &#39;Looks like a win-win-win situation.&#39;" width="650"/> 
+</figure>
+
+<p>Now that we have an idea of what we want, let&rsquo;s jump to everyone&rsquo;s favourite pastime: vibe-coding!</p>
+<h1 id="vibe-coding">Vibe-Coding<a hidden class="anchor" aria-hidden="true" href="#vibe-coding">#</a></h1>
+<p>The main idea here is similar to our <a href="https://mollysec.com/posts/password-audits-part-2/#vibe-coding">previous PoC</a>: vibe-code a minimal PoC for automating the above process. We used Bash to create <a href="https://github.com/CSpanias/pass-audit-tools/tree/main/hash-organiser"><code>hash-organiser</code></a>, so, for a breath of fresh air, this time we will use Python.</p>
+<figure>
+    <img loading="lazy" src="/images/vibe-coding-toy-story.png"
+         alt="An image with the Toy Story characters Woody and Buzz Lightyear saying &#39;Vibe coders everywhere...&#39;." width="650"/> 
+</figure>
+
+<p>For this PoC, instead of producing an all encompassing script, I decided to have a JSON file that the script will have to parse. The main reasons for this choice were:</p>
+<ul>
+<li>I didn&rsquo;t want to lose any native <code>hashcat</code> functionality (I wanted to have the ability to use all of its flags).</li>
+<li>I wanted to be able to configure and test different phases relatively easy.</li>
+<li>I wanted to have &ldquo;templates&rdquo; that could be handy for audit purposes (i.e., identical workflows) as well as for different cracking contexts (e.g. different timelines).</li>
+</ul>
+<p>Let&rsquo;s get to the point. Within this JSON file there are two root keys:</p>
+<ul>
+<li>The <code>parameters</code> key takes the <code>hashcat</code>-related stuff (e.g. hash file, hash mode, potfile, etc.).</li>
+<li>The <code>phases</code> key contains the phase-related details (e.g. wordlist and ruleset).</li>
+</ul>
+<blockquote>
+<p><em>Any additional key-value pair passed to <code>phases</code>, is added as a column on the final table (<code>--report</code>).</em></p>
+</blockquote>
+<figure>
+    <img loading="lazy" src="/images/phase-cracker_config.png"
+         alt="A screenshot of an example config.json file." width="650"/> 
+</figure>
+
+<p>The mighty <a href="https://github.com/CSpanias/pass-audit-tools/tree/main/phase-cracker"><code>phase-cracker</code></a> PoC has two main functions. Either it calculates the keyspace of each phase and provides a wildly-off estimated cracking time (<code>--estimate</code>) or it just executes all configured runs (<code>--estimate</code> flag omitted):</p>
+<figure>
+    <img loading="lazy" src="/images/phase-cracker_estimate.png"
+         alt="A screenshot of an example run with the --estimate flag." width="650"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/phase-cracker_example-run.png"
+         alt="A screenshot of an example run with the --estimate flag." width="650"/> 
+</figure>
+
+<h1 id="conclusion">Conclusion<a hidden class="anchor" aria-hidden="true" href="#conclusion">#</a></h1>
+<p>Cracking passwords is often seen as a purely technical task, with the goal of optimising runtime and increasing the percentage of cracked hashes. However, the way we approach cracking can significantly affect the value we extract from it, allowing us to move beyond a simple &ldquo;cracked vs. not cracked&rdquo; metric.</p>
+<p>In the next (and final) part, we will look at ways to analyse hashcat’s potfile and extract (hopefully) meaningful statistics.</p>
+<figure>
+    <img loading="lazy" src="/images/it-will-be-all-over-soon.png"
+         alt="An image with the actress Jeanette Miller from the Legion 10 movie and the logo &#39;It will be all over soon&#39;." width="650"/> 
+</figure>
+
+<p><strong>Next:</strong> [Password Audits Part 4: Analysing Results →]</p>
+<!-- (/posts/password-audits-part-4/) -->
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">mollysec</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

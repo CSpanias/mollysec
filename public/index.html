@@ -119,11 +119,35 @@
 
 <article class="first-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">Password Audits Part 3: Cracking Hashes
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Introduction If you feel like experimenting yourself, the NT hash dataset can be generated using this creatively-named script.
+In Part 1 we retrieved NTDS and in Part 2 we organised it using hash-organiser. We are now ready to move to the next part of the process: recovering hashes.
+Extract NTDS → Clean/Organise NTDS → Crack hashes → Generate stats.
+“Cracking hashes” sounds a bit abstract, so let’s try narrowing it down. At this stage, the goal is not to crack as many hashes as possible just because, but to identify weak passwords and patterns that represent real risk to the domain.
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-05-23 00:00:00 +0000 UTC'>May 23, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
+  <a class="entry-link" aria-label="post link to Password Audits Part 3: Cracking Hashes" href="http://localhost:1313/posts/password-audits-part-3-asdf/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">Password Audits Part 2: Hash Organisation
     </h2>
   </header>
   <div class="entry-content">
-    <p>Introduction In Part 1, we talked about how we can extract credentials from NTDS using DCSync and VSS. Now, it is time to think how to best handle the NTDS file. Extracting NTDS is typically the last step in a CTF, but it is just the first one here:
+    <p>Introduction In Part 1, we talked about how we can extract credentials from NTDS using DCSync and VSS. Now, it is time to think about how to best handle the NTDS file. Extracting NTDS is typically the last step in a CTF, but it is just the first one here:
 Extract NTDS → Clean/Organise NTDS → Crack hashes → Generate stats.
 The good news is that this part is technically much simpler; no need to talk about weird acronyms, protocols, and methods. We just need to decide what we actually need from NTDS and extract it.
 ...</p>

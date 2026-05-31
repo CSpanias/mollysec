@@ -12,11 +12,27 @@ theme = 'PaperMod'
   openGraph = true
   favicon = 'images/mollysec-logo-32x32.png'
   author = 'mollysec'
+  math = true
 
 [params.social]
     email = 'spaniascharalampos@gmail.com'
     github = 'https://github.com/CSpanias'
     linkedin = 'https://www.linkedin.com/in/charalamposspanias/'
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[markup.goldmark.extensions.passthrough]
+  enable = true
+  [markup.goldmark.extensions.passthrough.delimiters]
+    block = [
+      ["\\[", "\\]"],
+      ["$$", "$$"]
+    ]
+    inline = [
+      ["\\(", "\\)"],
+      ["$", "$"]
+    ]
   
 [menu]
   [[menu.main]]

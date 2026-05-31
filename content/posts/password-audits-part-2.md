@@ -63,7 +63,7 @@ Although, LM is considered the "[*grandpa of authentication*](https://learn.micr
 
 At this point, we want to keep only data that represents actual risk within the domain and remove anything that introduces noise.
 
-As a Proof of Concept (PoC), I will use an expanded version of the NTDS from Hack The Box's [Puppy](https://www.hackthebox.com/machines/puppy) machine. The original one did not contain any LM hashes and I also needed to add some testing-related accounts (you will understand why a bit later) so I had to add those.
+As a Proof of Concept (PoC), I will use an [expanded](https://github.com/CSpanias/pass-audit-tools/blob/main/hash-organiser/puppy.htb.ntds.expanded) version of the NTDS from Hack The Box's [Puppy](https://www.hackthebox.com/machines/puppy) machine. The original one did not contain any LM hashes and I also needed to add some testing-related accounts (you will understand why a bit later) so I had to add those.
 
 So let's start with the NTDS extraction command. Our goal is to assess the domain, therefore, we only need:
 - NTLM hashes → `-just-dc-ntlm`
@@ -197,7 +197,7 @@ The goal here is not to create the next [build-you-own-x](https://github.com/cod
     caption=""
 >}}
 
-I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/hash-organiser); I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
+I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/pass-audit-tools/tree/main/hash-organiser); I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
 
 The final script includes some optional stuff that we haven't talked about, so ignore those for now:
 
@@ -305,5 +305,4 @@ We now have our NTDS file processed and two clean datasets ready for cracking: `
 
 In the next part, we will focus on recovering plaintext passwords using [Hashcat](https://github.com/hashcat/hashcat); first manually, and then by vibe-coding a script to automate the process, just like we did here.
 
-**Next:** [Password Audits Part 3: Cracking Hashes →]
-<!-- (/posts/password-audits-part-3/) -->
+**Next:** [Password Audits Part 3: Cracking Hashes →](/posts/password-audits-part-3/)
