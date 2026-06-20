@@ -12,21 +12,21 @@ draft: false
 
 # Introduction
 
-One of the most consistent vulnerabilities I come across during internal assessments is what is known as **LLMNR/NBT-NS Poisoning**. Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
+**LLMNR/NBT-NS Poisoning** is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched [`Responder`](https://github.com/lgandx/Responder) hoping to capture a hash. In other words, you are already familiar with LLMNR/NBT-NS Poisoning, but have never really taken the time to explore what is actually happening behind the scenes.
+
+{{<figure 
+    src="/images/poisoning-responder-example.png"
+    alt="A screenshot of running Responder and capturing an NTLMv2 hash."
+    width="700"
+    caption=""
+>}} 
+
+Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
 - Unauthenticated &rarr; domain foothold
 - Standard user &rarr; standard user (lateral movement)
 - Standard user &rarr; privileged user (privilege escalation)
 
-I have been lucky enough to get and then recover a Domain Admin (DA)'s hash via this method; full domain compromise in just a couple of hours!
-
-Most people have used tools such as [`Responder`]((https://github.com/lgandx/Responder)) in a lab to capture credentials, but relatively few have explored the underlying protocols that make this possible. In this example, a failed name resolution triggers a fallback mechanism, allowing the attacker to impersonate the target and capture the authentication.
-
-{{<figure 
-    src="/images/poisoning-responder-example.png"
-    alt="The process of DNS resolution."
-    width="950"
-    caption=""
->}} 
+I have been lucky enough to get and then recover a Domain Admin (DA)'s hash this way; achieving full domain compromise in just a couple of hours!
 
 In this article we will go over what these protocols are, how they work, and why they are still here to this day. But before diving into the nitty gritty details for each protocol, we will first go through a high-level overview of how name resolution works within a Windows domain.
 

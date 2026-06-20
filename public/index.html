@@ -11,7 +11,7 @@
 <meta name="description" content="Security research and technical writeups">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.94bd45f1f7328615555c485c1deb0fdfbdc7d9493df33e802f8b3f0169d6bc2d.css" integrity="sha256-lL1F8fcyhhVVXEhcHesP373H2Uk98z6AL4s/AWnWvC0=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
@@ -123,8 +123,8 @@
     </h2>
   </header>
   <div class="entry-content">
-    <p>Introduction One of the most consistent vulnerabilities I come across during internal assessments is what is known as LLMNR/NBT-NS Poisoning. Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
-Unauthenticated → domain foothold Standard user → standard user (lateral movement) Standard user → privileged user (privilege escalation) I have been lucky enough to get and then recover a Domain Admin (DA)’s hash via this method; full domain compromise in just a couple of hours!
+    <p>Introduction LLMNR/NBT-NS Poisoning is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched Responder hoping to capture a hash. In other words, you are already familiar with LLMNR/NBT-NS Poisoning, but have never really taken the time to explore what is actually happening behind the scenes.
+Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
 ...</p>
   </div>
   <footer class="entry-footer">
