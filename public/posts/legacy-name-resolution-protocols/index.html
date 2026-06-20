@@ -237,7 +237,7 @@
 <h1 id="mitigation">Mitigation<a hidden class="anchor" aria-hidden="true" href="#mitigation">#</a></h1>
 <p>The most effective mitigation for these protocols is to disable them entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.</p>
 <p>If disabling these protocols is not feasible, the impact of potential attacks can be reduced. Enforcing strong and unique passwords across all user accounts limits the effectiveness of credential capture by making offline cracking significantly harder. In addition, enabling protocol-level protections such as SMB signing as well as LDAP signing and channel binding can mitigate NTLM relay attacks by preventing attackers from forwarding captured authentication to other services.</p>
-<p><strong>Note</strong>: Changes to name resolution behaviour should be carefully tested before deployment. Disabling certain protocols, particularly mDNS, can introduce unexpected operational issues, such as broken printer discovery or loss of screen sharing and casting functionality in conferencing environments.</p>
+<p><strong>Note</strong>: Changes to name resolution behaviour should be carefully tested before being deployed in a production environment. Disabling certain protocols, particularly mDNS, can introduce unexpected operational issues, such as broken printer discovery or loss of screen sharing and casting functionality in conferencing environments!</p>
 
 
   </div>
