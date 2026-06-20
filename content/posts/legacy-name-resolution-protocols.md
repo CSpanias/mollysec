@@ -19,6 +19,15 @@ One of the most consistent vulnerabilities I come across during internal assessm
 
 I have been lucky enough to get and then recover a Domain Admin (DA)'s hash via this method; full domain compromise in just a couple of hours!
 
+Most people have used tools such as [`Responder`]((https://github.com/lgandx/Responder)) in a lab to capture credentials, but relatively few have explored the underlying protocols that make this possible. In this example, a failed name resolution triggers a fallback mechanism, allowing the attacker to impersonate the target and capture the authentication.
+
+{{<figure 
+    src="/images/poisoning-responder-example.png"
+    alt="The process of DNS resolution."
+    width="950"
+    caption=""
+>}} 
+
 In this article we will go over what these protocols are, how they work, and why they are still here to this day. But before diving into the nitty gritty details for each protocol, we will first go through a high-level overview of how name resolution works within a Windows domain.
 
 # TL;DR on DNS

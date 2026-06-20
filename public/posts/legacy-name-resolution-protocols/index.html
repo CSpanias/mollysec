@@ -138,6 +138,12 @@
 <li>Standard user → privileged user (privilege escalation)</li>
 </ul>
 <p>I have been lucky enough to get and then recover a Domain Admin (DA)&rsquo;s hash via this method; full domain compromise in just a couple of hours!</p>
+<p>Most people have used tools such as <a href="(https://github.com/lgandx/Responder)"><code>Responder</code></a> in a lab to capture credentials, but relatively few have explored the underlying protocols that make this possible. In this example, a failed name resolution triggers a fallback mechanism, allowing the attacker to impersonate the target and capture the authentication.</p>
+<figure>
+    <img loading="lazy" src="/images/poisoning-responder-example.png"
+         alt="The process of DNS resolution." width="950"/> 
+</figure>
+
 <p>In this article we will go over what these protocols are, how they work, and why they are still here to this day. But before diving into the nitty gritty details for each protocol, we will first go through a high-level overview of how name resolution works within a Windows domain.</p>
 <h1 id="tldr-on-dns">TL;DR on DNS<a hidden class="anchor" aria-hidden="true" href="#tldr-on-dns">#</a></h1>
 <p>We won&rsquo;t go through any details about the Domain Name System (DNS) here, as this is not our focus, but if you need a quick refresher, these two short articles will do the job:</p>
