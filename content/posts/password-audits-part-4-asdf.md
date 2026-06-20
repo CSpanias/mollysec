@@ -24,7 +24,10 @@ draft: true
 - a bit finicky, but outputs what we need for the custom reporting platform
 - that is XLM files mapped to the platforms findings and stock text for each section of the finding
 - Is there any other modern tool we can use for that?
-- I currently used `-D 2 -O` to use both GPUs and optimised kernels. Is this the best optimisation?
+
+- [Specops Password Auditor](https://specopssoft.com/product/specops-password-auditor/)
+- [Pwdlyser](https://github.com/ins1gn1a/Pwdlyser)
+- [WPT](https://www.knowbe4.com/free-cybersecurity-tools/weak-password-test)
 
 # Reporting
 

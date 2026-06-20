@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>LLMNR/NBT-NS Poisoning Explained | mollysec</title>
+<meta name="keywords" content="">
+<meta name="description" content="How legacy name resolution protocols work and why they still persist more than 40 years later.">
+<meta name="author" content="mollysec">
+<link rel="canonical" href="http://localhost:1313/posts/legacy-name-resolution-protocols/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.94bd45f1f7328615555c485c1deb0fdfbdc7d9493df33e802f8b3f0169d6bc2d.css" integrity="sha256-lL1F8fcyhhVVXEhcHesP373H2Uk98z6AL4s/AWnWvC0=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/legacy-name-resolution-protocols/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="mollysec (Alt + H)">mollysec</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      LLMNR/NBT-NS Poisoning Explained
+    </h1>
+    <div class="post-description">
+      How legacy name resolution protocols work and why they still persist more than 40 years later.
+    </div>
+    <div class="post-meta">
+
+<span title='2026-06-20 00:00:00 +0000 UTC'>June 20, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<p>One of the most consistent vulnerabilities I come across during internal assessments is what is known as <strong>LLMNR/NBT-NS Poisoning</strong>. Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:</p>
+<ul>
+<li>Unauthenticated → domain foothold</li>
+<li>Standard user → standard user (lateral movement)</li>
+<li>Standard user → privileged user (privilege escalation)</li>
+</ul>
+<p>I have been lucky enough to get and then recover a Domain Admin (DA)&rsquo;s hash via this method; full domain compromise in just a couple of hours!</p>
+<p>In this article we will go over what these protocols are, how they work, and why they are still here to this day. But before diving into the nitty gritty details for each protocol, we will first go through a high-level overview of how name resolution works within a Windows domain.</p>
+<h1 id="tldr-on-dns">TL;DR on DNS<a hidden class="anchor" aria-hidden="true" href="#tldr-on-dns">#</a></h1>
+<p>We won&rsquo;t go through any details about the Domain Name System (DNS) here, as this is not our focus, but if you need a quick refresher, these two short articles will do the job:</p>
+<ul>
+<li><a href="https://www.scoutdns.com/library/dns-101-introduction/">DNS 101: Introduction to the Domain Name System</a></li>
+<li><a href="https://www.scoutdns.com/library/how-dns-resolution-works/">How DNS Resolution Works (At a High Level)</a>.</li>
+</ul>
+<p>The layman&rsquo;s version is that DNS is the link between the way humans communicate with computers and the way computers communicate with each other. For example:</p>
+<ol>
+<li>A user types <code>example.com</code> on the browser.</li>
+<li>The computer will ask a translator (name resolution protocol) to resolve the hostname (<code>example.com</code>) to an IP address.</li>
+<li>The translator will resolve the hostname to an IP address (e.g. <code>132.34.45.121</code>) and send it back to the user.</li>
+</ol>
+<figure>
+    <img loading="lazy" src="/images/dns-resolution.png"
+         alt="The process of DNS resolution." width="650"/> <figcaption>
+            <p>Image taken from <a href="https://www.geeksforgeeks.org/computer-networks/address-resolution-in-dns-domain-name-server/">here</a>.</p>
+        </figcaption>
+</figure>
+
+<p>So let&rsquo;s now see where these legacy name resolution protocols (LLMNR, mDNS, and NBT-NS) come into the picture.</p>
+<p>In every functional domain, there is a <a href="https://learn.microsoft.com/en-us/windows-server/networking/dns/dns-overview">DNS server</a> which is responsible for the name resolution process we just described. However, DNS can fail for various reasons, such as using single-label hostnames vs Fully Qualified Domain Names (FQDN) (e.g. <code>FS01</code> vs <code>FS01.MOLLYSEC.COM</code>), unreachable or misconfigured DNS servers, hosts that are not registered in DNS, etc.</p>
+<p>In the case of a DNS failure, these legacy protocols kick in to save the day. They act as a fallback mechanism and their job is to resolve the hostname locally, for instance, by asking every other host (or a specific group of hosts) on the local area network (LAN) if they know who <code>FS01</code> is. This is what is called <strong>Local Name Resolution</strong>.</p>
+<p>On Windows systems, name resolution follows a specific hierarchical order:</p>
+<ol>
+<li>First, the DNS server will be asked to resolve a hostname, URL, UNC path, etc.</li>
+<li>If the DNS fails, LLMNR (and mDNS in some cases) will be queried.</li>
+<li>If LLMNR also fails, NBT-NS may be used as a last resort.</li>
+</ol>
+<p>These fallback protocols rely on <a href="https://www.pynetlabs.com/difference-between-broadcast-and-multicast/#elementor-toc__heading-anchor-2">broadcast</a> (ask all LAN hosts) or <a href="https://www.pynetlabs.com/difference-between-broadcast-and-multicast/#elementor-toc__heading-anchor-7">multicast</a> (ask only a group of hosts) queries. In the below example, when DNS fails between <code>WK02</code> and the DNS server due to the usage of a single-label name, the former uses a broadcast query. The first host to respond is assumed to be the correct one.</p>
+<figure>
+    <img loading="lazy" src="/images/dns-resolution-protocols.png"
+         alt="The process of name resolution in Windows." width="950"/> 
+</figure>
+
+<p>The issue with these query types is that they can be <a href="https://www.rfc-editor.org/info/rfc4795/#section-5.2">easily intercepted and spoofed</a> by establishing a Machine-in-the-Middle (MitM) position and responding to them with malicious replies, what is known as <strong>LLMNR/NBT-NS poisoning</strong>. This can result in capturing authentication attempts from users (typically NTLMv2 hashes) which can then be cracked offline or relayed to other services.</p>
+<p>The below diagram shows how an attacker with an established MitM position can capture a user&rsquo;s credentials:</p>
+<figure>
+    <img loading="lazy" src="/images/llmnr-nbt_ns-poisoning.png"
+         alt="The process of name resolution." width="950"/> 
+</figure>
+
+<p>Now we got the high-level picture, let&rsquo;s see how each protocol works.</p>
+<h1 id="nbt-ns">NBT-NS<a hidden class="anchor" aria-hidden="true" href="#nbt-ns">#</a></h1>
+<p>Let’s start with some terminology so we know what we are talking about:</p>
+<ul>
+<li><strong><a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cifs/760f8b7f-9a8a-4f0c-a044-1501a83a933b#gt_b86c44e6-57df-4c48-8163-5e3fa7bdcff4">Network Basic Input/Output System (NetBIOS)</a></strong> is a legacy API that allows applications on different hosts to communicate over a LAN.</li>
+<li><strong><a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cifs/45170055-a0cd-4910-9228-801d5bf7ac84">NetBIOS over TCP/IP (NBT)</a></strong>, as the name implies, is a NetBIOS extension that works over IP-based networks.</li>
+<li><strong>NetBIOS over TCP/IP Name Service (NBT-NS)</strong>, often referred to as <strong><a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cifs/760f8b7f-9a8a-4f0c-a044-1501a83a933b#gt_a28c2e64-21dd-46ca-9aea-42204fbb8411">NetBIOS Name Service (NBNS)</a></strong>, is responsible for name registration and resolution in legacy Windows environments. It can operate using broadcast-based queries or leverage the <strong><a href="https://learn.microsoft.com/en-us/windows-server/networking/technologies/wins/wins-top">Windows Internet Name Service (WINS)</a></strong>, a centralised name resolution service designed to reduce broadcast traffic by providing a dedicated server for NetBIOS name lookups.</li>
+</ul>
+<p>Although NBT-NS is a legacy protocol (introduced in 1983!), it is still widely present in modern environments. By default, Windows machines are configured to &ldquo;<em>Use NetBIOS setting from the DHCP server</em>&rdquo; which means that:</p>
+<ul>
+<li>If the DHCP server provides NetBIOS configuration, the client will follow its behaviour. For instance, if DHCP has a hybrid <a href="https://datatracker.ietf.org/doc/html/rfc2132#section-8.7">node type</a> (<a href="https://kb.gtkc.net/setting-netbios-node-types-in-dhcpd-conf">H-node</a>), a WINS server will be queried first, followed by broadcast-based resolution.</li>
+<li>If the DHCP server provides no NetBIOS configuration or if the system uses a static IP address, NBT-NS will be enabled.</li>
+</ul>
+<figure>
+    <img loading="lazy" src="/images/nbtns-settings.png"
+         alt="How to configure the NBT-NS in Windows." width="950"/> 
+</figure>
+
+<p>As a result, if no one bothers to explicitly disable NBT-NS, it will probably be there.</p>
+<h1 id="llmnr">LLMNR<a hidden class="anchor" aria-hidden="true" href="#llmnr">#</a></h1>
+<p><a href="https://www.rfc-editor.org/info/rfc4795/">Link-Local Multicast Name Resolution (LLMNR)</a> was introduced around 2006-2007 as the successor of NBT-NS. It serves the same goal with NBT-NS: provide name resolution in scenarios where conventional DNS is not available.</p>
+<p>Similarly with NBT-NS, LLMNR often exists on the domain because no one has bothered to disable it. As shown below, if the &ldquo;<em>Turn off multicast name resolution</em>&rdquo; policy setting is not explicitly enabled, then LLMNR will be present:</p>
+<figure>
+    <img loading="lazy" src="/images/llmnr-setting.png"
+         alt="The local group policy for LLMNR on Windows." width="950"/> 
+</figure>
+
+<p>While there are <a href="https://tcm-sec.com/llmnr-poisoning-and-how-to-prevent-it#:~:text=LLMNR%20has%20no%20authentication%20mechanism">articles</a> stating that <em><strong>LLMNR has no authentication mechanism</strong></em>, thus, allowing any host on the network to respond to LLMNR requests, this is theoretically wrong (but practically true). As a matter of fact LLMNR has not one, but <a href="https://www.rfc-editor.org/info/rfc4795/#section-5.3">three authentication options</a>:</p>
+<ul>
+<li><a href="https://www.rfc-editor.org/info/rfc2845/">TSIG</a> is based on <strong>a group of hosts (e.g. domain-joined systems) sharing a secret key used to sign and verify LLMNR messages</strong>. This can effectively prevent rogue devices on the network from responding to LLMNR queries. However, in case of a compromised domain-joined machine, the key will also be compromised anyway.</li>
+<li><a href="https://www.rfc-editor.org/info/rfc5406/">IPsec</a> authenticates hosts rather than messages. It <strong>can prove who sent the response</strong>, but not whether that host is actually authoritative for the name it claims. It can leverage <a href="https://www.rfc-editor.org/info/rfc5406/#section-3.3">Kerberos or an existing PKI</a> (e.g. ADCS), so it may seem to be a good choice in environments where these are already deployed. However, similarly to TSIG, if a domain-joined machine is compromised, it will already have a valid identity (e.g. cert or TGT). As a result, IPsec provides a similar level of protection to TSIG: it can prevent unauthorised devices from participating in LLMNR, but cannot stop already trusted hosts from impersonating arbitrary names.</li>
+<li><a href="https://www.rfc-editor.org/info/rfc4033/">DNSSEC</a> is the last and strongest option; it <strong>allows a responder to prove ownership of a name</strong>. However, DNSSEC relies on a hierarchical trust model, which LLMNR lacks. Without delegation, trust anchors, or authoritative servers, there is no mechanism to establish or validate that trust.</li>
+</ul>
+<p>If you ever wrote or read a pentest report which included LLMNR Poisoning as a finding, I am almost certain that the mitigation was to <strong>just disable it</strong>. But why is this the case?</p>
+<p>As we already said, DNS can fail for multiple reasons and companies need to not be interrupted, thus, having a fallback mechanism seems like a no-brainer. Since mechanisms like TSIG and IPsec can make it a bit more secure (at least against rogue systems), why not go that way? Well, for a couple of reasons:</p>
+<ul>
+<li>First, the rogue device vector does <strong>not really align with the modern threat model</strong>. In real-world environments, attackers rarely operate from arbitrary, unauthorised devices, but gain a foothold on domain-joined systems through phishing, malware, or other initial access vectors. As discussed, neither TSIG nor IPsec can protect against that.</li>
+<li>Given the <strong>operational complexity of deploying such mechanisms</strong> and the limited security benefit they provide, it is just not worth the hassle. Modern enterprise environments rely on a properly configured DNS rather than opportunistic local resolution, and they prefer to have DNS failures rather than an insecure fallback.</li>
+</ul>
+<p>At the end of the day, <strong>LLMNR prioritises convenience over security</strong> and creates an attack surface that can be exploited even in otherwise well-configured environments. As a result, the standard approach is to disable it entirely and eliminate the attack surface altogether rather than attempt to control an inherently insecure protocol.</p>
+<p>So both NBT-NS and LLMNR seem to enabled on almost every domain because no one has explicitly disabled them!</p>
+<h1 id="mdns">mDNS<a hidden class="anchor" aria-hidden="true" href="#mdns">#</a></h1>
+<p><a href="https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/#multicast-dns-mdns">Multicast DNS (mDNS)</a> is another name resolution protocol designed to operate without a traditional DNS server (e.g. <a href="https://wellstsai.com/en/post/mdns-iot-device-discovery/">a home network</a>). Unlike LLMNR and NBT-NS, which rely on broadcast traffic, mDNS uses <strong>multicast queries</strong> sent to a predefined group address (<code>224.0.0.251</code> for IPv4).</p>
+<p>mDNS is commonly associated with <strong>service discovery protocols</strong> (e.g. Apple’s Bonjour), and is widely used in environments where devices need to dynamically locate each other (e.g. printers, file sharing, or screen casting). In these scenarios, hosts advertise and discover services using names within the <code>.local</code> namespace.</p>
+<figure>
+    <img loading="lazy" src="/images/mdns.png"
+         alt="A flowchart showing how mDNS works." width="950"/> <figcaption>
+            <p>Image taken from <a href="https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/">here</a>.</p>
+        </figcaption>
+</figure>
+
+<p>From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted.</p>
+<p>Although mDNS uses a predefined multicast group rather than broadcast traffic, this does not provide any form of access control. Any host on the local network can join the multicast group, receive queries, and send responses. As a result, multicast improves efficiency (by reducing network traffic), but does not introduce trust.</p>
+<p>In practice, however, mDNS is less commonly associated with credential capture in Windows environments. Unlike LLMNR and NBT-NS, it is not tightly integrated with authentication flows (e.g. SMB) and is primarily used for service discovery rather than domain resource access. In addition, unlike LLMNR and NBT-NS, mDNS is often required for legitimate functionality (e.g. network printers, AirPlay, or conferencing systems).</p>
+<h1 id="mitigation">Mitigation<a hidden class="anchor" aria-hidden="true" href="#mitigation">#</a></h1>
+<p>The most effective mitigation for these protocols is to disable them entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.</p>
+<p>If disabling these protocols is not feasible, the impact of potential attacks can be reduced. Enforcing strong and unique passwords across all user accounts limits the effectiveness of credential capture by making offline cracking significantly harder. In addition, enabling protocol-level protections such as SMB signing as well as LDAP signing and channel binding can mitigate NTLM relay attacks by preventing attackers from forwarding captured authentication to other services.</p>
+<p><strong>Note</strong>: Changes to name resolution behaviour should be carefully tested before deployment. Disabling certain protocols, particularly mDNS, can introduce unexpected operational issues, such as broken printer discovery or loss of screen sharing and casting functionality in conferencing environments.</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">mollysec</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

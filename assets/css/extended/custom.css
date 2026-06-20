@@ -23,3 +23,13 @@ pre code {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Center the image captions */
+figure {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+figure figcaption {
+    text-align: center;
+}

@@ -6,13 +6,20 @@
     <description>Recent content on mollysec</description>
     <generator>Hugo</generator>
     <language>en-gb</language>
-    <lastBuildDate>Sat, 23 May 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 19 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Legacy Name Resolution Protocols</title>
+      <link>http://localhost:1313/posts/legacy-name-resolution-protocols/</link>
+      <pubDate>Fri, 19 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/legacy-name-resolution-protocols/</guid>
+      <description>Deep dive into LLMNR, NTB-NS, and mDNS.</description>
+    </item>
+    <item>
       <title>Password Audits Part 3: Cracking Hashes</title>
-      <link>http://localhost:1313/posts/password-audits-part-3-asdf/</link>
-      <pubDate>Sat, 23 May 2026 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/password-audits-part-3-asdf/</guid>
+      <link>http://localhost:1313/posts/password-audits-part-3/</link>
+      <pubDate>Sun, 31 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
       <description>Cracking NTLM hashes in the real world.</description>
     </item>
     <item>
@@ -42,9 +49,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/about/</guid>
       <description>&lt;h1 id=&#34;who-am-i&#34;&gt;Who Am I?&lt;/h1&gt;
-&lt;p&gt;I&amp;rsquo;m a penetration tester who gets frustrated by &amp;ldquo;just because&amp;rdquo; answers. I want to understand how things work and then figure out how to make them better.&lt;/p&gt;
-&lt;p&gt;Currently, I work as a security consultant and I&amp;rsquo;m currently diving into Active Directory on the side. Before this, I spent a couple of years in Fintech as an internal pentester.&lt;/p&gt;
-&lt;p&gt;I&amp;rsquo;m working towards a Diploma (who knows, maybe a BSc!) in Cybersecurity, and I&amp;rsquo;ve picked up a few industry certifications along the way, including the OSCP, CRTP, and CAPE.&lt;/p&gt;</description>
+&lt;p&gt;I am a penetester who tries to understand how things work and figure out how to make them better. Currently, my focus revolves mostly around Active Directory. I&amp;rsquo;m working towards a Diploma (who knows, maybe a BSc!) in Cybersecurity, and I&amp;rsquo;ve picked up a few industry certifications along the way, including &lt;a href=&#34;https://www.offsec.com/courses/web-200/&#34;&gt;OSWA&lt;/a&gt;, &lt;a href=&#34;https://www.offsec.com/courses/pen-200/&#34;&gt;OSCP&lt;/a&gt;, &lt;a href=&#34;https://www.alteredsecurity.com/adlab&#34;&gt;CRTP&lt;/a&gt;, and &lt;a href=&#34;https://academy.hackthebox.com/preview/certifications/htb-certified-active-directory-pentesting-expert&#34;&gt;CAPE&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;I&amp;rsquo;ve only been in this field since early 2024, so expect a good amount of inaccuracies in my posts. That said, I&amp;rsquo;m always open to discussion and critical feedback if you spot something worth correcting or exploring further.&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
