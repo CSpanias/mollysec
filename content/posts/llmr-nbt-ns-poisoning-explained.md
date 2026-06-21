@@ -67,7 +67,7 @@ These fallback protocols rely on [broadcast](https://www.pynetlabs.com/differenc
     alt="The process of name resolution in Windows."
     width="950"
     caption=""
->}} 
+>}}
 
 The issue with these query types is that they can be [easily intercepted and spoofed](https://www.rfc-editor.org/info/rfc4795/#section-5.2) by establishing a Machine-in-the-Middle (MitM) position and responding to them with malicious replies, what is known as **LLMNR/NBT-NS poisoning**. This can result in capturing authentication attempts from users (typically NTLMv2 hashes) which can then be cracked offline or relayed to other services.
 
@@ -103,6 +103,15 @@ Although NBT-NS is a legacy protocol (introduced in 1983!), it is still widely p
 
 As a result, if no one bothers to explicitly disable NBT-NS, it will probably be there.
 
+We can confirm that this is the case by starting a [Wireshark](https://www.wireshark.org/) capture on the UDP port 137 and then trying to resolve a non-existing path (the `<20>` part on the query is a [NetBIOS suffix](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nbte/6dbf0972-bb15-4f29-afeb-baaae98416ed#:~:text=File%20Server%20Service)):
+
+{{<figure 
+    src="/images/nbt-ns-wireshark.png"
+    alt="Capturing NBT-NS traffic with Wireshark."
+    width="950"
+    caption=""
+>}}
+
 # LLMNR
 
 [Link-Local Multicast Name Resolution (LLMNR)](https://www.rfc-editor.org/info/rfc4795/) was introduced around 2006-2007 as the successor of NBT-NS. It serves the same goal with NBT-NS: provide name resolution in scenarios where conventional DNS is not available. 
@@ -115,6 +124,17 @@ Similarly with NBT-NS, LLMNR often exists on the domain because no one has bothe
     width="950"
     caption=""
 >}} 
+
+We can confirm that LLMNR traffic is present by starting a [Wireshark](https://www.wireshark.org/) capture on the UDP port 5355:
+
+{{<figure 
+    src="/images/llmnr-wireshark.png"
+    alt="Capturing LLMNR traffic with Wireshark."
+    width="950"
+    caption=""
+>}}
+
+Although LLMNR uses a predefined multicast group (`224.0.0.252`) rather than broadcast traffic, this does not provide any form of access control. Any host on the local network can join the multicast group, receive queries, and send responses. As a result, multicast improves efficiency (by reducing network traffic), but does not introduce trust.
 
 While there are [articles](https://tcm-sec.com/llmnr-poisoning-and-how-to-prevent-it#:~:text=LLMNR%20has%20no%20authentication%20mechanism) stating that ***LLMNR has no authentication mechanism***, thus, allowing any host on the network to respond to LLMNR requests, this is theoretically wrong (but practically true). As a matter of fact LLMNR has not one, but [three authentication options](https://www.rfc-editor.org/info/rfc4795/#section-5.3):
 
@@ -145,15 +165,29 @@ mDNS is commonly associated with **service discovery protocols** (e.g. Apple’s
     caption="Image taken from [here](https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/)."
 >}} 
 
-From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted.
+From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted. Also, similar to LLMNR, it needs to be explicitly disabled.
 
-Although mDNS uses a predefined multicast group rather than broadcast traffic, this does not provide any form of access control. Any host on the local network can join the multicast group, receive queries, and send responses. As a result, multicast improves efficiency (by reducing network traffic), but does not introduce trust.
+{{<figure 
+    src="/images/mdns-policy.png"
+    alt="The default policy of mDNS."
+    width="950"
+    caption=""
+>}}
 
-In practice, however, mDNS is less commonly associated with credential capture in Windows environments. Unlike LLMNR and NBT-NS, it is not tightly integrated with authentication flows (e.g. SMB) and is primarily used for service discovery rather than domain resource access. In addition, unlike LLMNR and NBT-NS, mDNS is often required for legitimate functionality (e.g. network printers, AirPlay, or conferencing systems).
+Similarly to LLMNR, we can confirm this by starting a Wireshark capture on the UDP port 5353 and trying to resolve something with the `.local` suffix:
+
+{{<figure 
+    src="/images/mdns-wireshark.png"
+    alt="The default policy of mDNS."
+    width="950"
+    caption=""
+>}}
+
+In practice, mDNS is less commonly associated with credential capture in Windows environments. Unlike LLMNR and NBT-NS, it is not tightly integrated with authentication flows (e.g. SMB) and is primarily used for service discovery rather than domain resource access. In addition, unlike LLMNR and NBT-NS, mDNS is often required for legitimate functionality (e.g. network printers, AirPlay, or conferencing systems).
 
 # Mitigation
 
-The most effective mitigation for these protocols is to disable them entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.
+The most effective mitigation for these protocols is to [disable them](https://woshub.com/how-to-disable-netbios-over-tcpip-and-llmnr-using-gpo/) entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.
 
 If disabling these protocols is not feasible, the impact of potential attacks can be reduced. Enforcing strong and unique passwords across all user accounts limits the effectiveness of credential capture by making offline cracking significantly harder. In addition, enabling protocol-level protections such as SMB signing as well as LDAP signing and channel binding can mitigate NTLM relay attacks by preventing attackers from forwarding captured authentication to other services.
 

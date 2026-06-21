@@ -9,7 +9,7 @@
 <meta name="keywords" content="">
 <meta name="description" content="How legacy name resolution protocols work and why they still persist more than 40 years later.">
 <meta name="author" content="mollysec">
-<link rel="canonical" href="http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/">
+<link rel="canonical" href="http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained-copy/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
@@ -18,7 +18,7 @@
 <link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained-copy/">
 <noscript>
     <style>
         #theme-toggle,
@@ -205,12 +205,6 @@
 </figure>
 
 <p>As a result, if no one bothers to explicitly disable NBT-NS, it will probably be there.</p>
-<p>We can confirm that this is the case by starting a <a href="https://www.wireshark.org/">Wireshark</a> capture on the UDP port 137 and then trying to resolve a non-existing path (the <code>&lt;20&gt;</code> part on the query is a <a href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nbte/6dbf0972-bb15-4f29-afeb-baaae98416ed#:~:text=File%20Server%20Service">NetBIOS suffix</a>):</p>
-<figure>
-    <img loading="lazy" src="/images/nbt-ns-wireshark.png"
-         alt="Capturing NBT-NS traffic with Wireshark." width="950"/> 
-</figure>
-
 <h1 id="llmnr">LLMNR<a hidden class="anchor" aria-hidden="true" href="#llmnr">#</a></h1>
 <p><a href="https://www.rfc-editor.org/info/rfc4795/">Link-Local Multicast Name Resolution (LLMNR)</a> was introduced around 2006-2007 as the successor of NBT-NS. It serves the same goal with NBT-NS: provide name resolution in scenarios where conventional DNS is not available.</p>
 <p>Similarly with NBT-NS, LLMNR often exists on the domain because no one has bothered to disable it. As shown below, if the &ldquo;<em>Turn off multicast name resolution</em>&rdquo; policy setting is not explicitly enabled, then LLMNR will be present:</p>
@@ -219,13 +213,6 @@
          alt="The local group policy for LLMNR on Windows." width="950"/> 
 </figure>
 
-<p>We can confirm that LLMNR traffic is present by starting a <a href="https://www.wireshark.org/">Wireshark</a> capture on the UDP port 5355:</p>
-<figure>
-    <img loading="lazy" src="/images/llmnr-wireshark.png"
-         alt="Capturing LLMNR traffic with Wireshark." width="950"/> 
-</figure>
-
-<p>Although LLMNR uses a predefined multicast group (<code>224.0.0.252</code>) rather than broadcast traffic, this does not provide any form of access control. Any host on the local network can join the multicast group, receive queries, and send responses. As a result, multicast improves efficiency (by reducing network traffic), but does not introduce trust.</p>
 <p>While there are <a href="https://tcm-sec.com/llmnr-poisoning-and-how-to-prevent-it#:~:text=LLMNR%20has%20no%20authentication%20mechanism">articles</a> stating that <em><strong>LLMNR has no authentication mechanism</strong></em>, thus, allowing any host on the network to respond to LLMNR requests, this is theoretically wrong (but practically true). As a matter of fact LLMNR has not one, but <a href="https://www.rfc-editor.org/info/rfc4795/#section-5.3">three authentication options</a>:</p>
 <ul>
 <li><a href="https://www.rfc-editor.org/info/rfc2845/">TSIG</a> is based on <strong>a group of hosts (e.g. domain-joined systems) sharing a secret key used to sign and verify LLMNR messages</strong>. This can effectively prevent rogue devices on the network from responding to LLMNR queries. However, in case of a compromised domain-joined machine, the key will also be compromised anyway.</li>
@@ -250,21 +237,11 @@
         </figcaption>
 </figure>
 
-<p>From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted. Also, similar to LLMNR, it needs to be explicitly disabled.</p>
-<figure>
-    <img loading="lazy" src="/images/mdns-policy.png"
-         alt="The default policy of mDNS." width="950"/> 
-</figure>
-
-<p>Similarly to LLMNR, we can confirm this by starting a Wireshark capture on the UDP port 5353 and trying to resolve something with the <code>.local</code> suffix:</p>
-<figure>
-    <img loading="lazy" src="/images/mdns-wireshark.png"
-         alt="The default policy of mDNS." width="950"/> 
-</figure>
-
-<p>In practice, mDNS is less commonly associated with credential capture in Windows environments. Unlike LLMNR and NBT-NS, it is not tightly integrated with authentication flows (e.g. SMB) and is primarily used for service discovery rather than domain resource access. In addition, unlike LLMNR and NBT-NS, mDNS is often required for legitimate functionality (e.g. network printers, AirPlay, or conferencing systems).</p>
+<p>From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted.</p>
+<p>Although mDNS uses a predefined multicast group rather than broadcast traffic, this does not provide any form of access control. Any host on the local network can join the multicast group, receive queries, and send responses. As a result, multicast improves efficiency (by reducing network traffic), but does not introduce trust.</p>
+<p>In practice, however, mDNS is less commonly associated with credential capture in Windows environments. Unlike LLMNR and NBT-NS, it is not tightly integrated with authentication flows (e.g. SMB) and is primarily used for service discovery rather than domain resource access. In addition, unlike LLMNR and NBT-NS, mDNS is often required for legitimate functionality (e.g. network printers, AirPlay, or conferencing systems).</p>
 <h1 id="mitigation">Mitigation<a hidden class="anchor" aria-hidden="true" href="#mitigation">#</a></h1>
-<p>The most effective mitigation for these protocols is to <a href="https://woshub.com/how-to-disable-netbios-over-tcpip-and-llmnr-using-gpo/">disable them</a> entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.</p>
+<p>The most effective mitigation for these protocols is to disable them entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.</p>
 <p>If disabling these protocols is not feasible, the impact of potential attacks can be reduced. Enforcing strong and unique passwords across all user accounts limits the effectiveness of credential capture by making offline cracking significantly harder. In addition, enabling protocol-level protections such as SMB signing as well as LDAP signing and channel binding can mitigate NTLM relay attacks by preventing attackers from forwarding captured authentication to other services.</p>
 <p><strong>Note</strong>: Changes to name resolution behaviour should be carefully tested before being deployed in a production environment. Disabling certain protocols, particularly mDNS, can introduce unexpected operational issues, such as broken printer discovery or loss of screen sharing and casting functionality in conferencing environments!</p>
 
