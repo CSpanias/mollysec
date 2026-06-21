@@ -12,7 +12,7 @@ draft: false
 
 # Introduction
 
-**LLMNR/NBT-NS Poisoning** is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched [`Responder`](https://github.com/lgandx/Responder) hoping to capture a hash. In other words, you are already familiar with the attack, but have never really taken the time to explore what is actually happening behind the scenes.
+**LLMNR/NBT-NS Poisoning** is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched [`Responder`](https://github.com/lgandx/Responder) hoping to capture a hash:
 
 {{<figure 
     src="/images/poisoning-responder-example.png"
@@ -21,7 +21,7 @@ draft: false
     caption=""
 >}} 
 
-Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
+If that's the case, you are already familiar with the attack, but have never really taken the time to explore what is actually happening behind the scenes. Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
 - Unauthenticated &rarr; domain foothold
 - Standard user &rarr; standard user (lateral movement)
 - Standard user &rarr; privileged user (privilege escalation)
@@ -32,7 +32,7 @@ In this article we will go over what these protocols are, how they work, and why
 
 # TL;DR on DNS
 
-We won't go through any details about the Domain Name System (DNS) here, as this is not our focus, but if you need a quick refresher, these two short articles will do the job:
+We won't go through any details about the Domain Name System (DNS) here, but if you need a quick refresher these two short articles will do the job:
 - [DNS 101: Introduction to the Domain Name System](https://www.scoutdns.com/library/dns-101-introduction/)
 - [How DNS Resolution Works (At a High Level)](https://www.scoutdns.com/library/how-dns-resolution-works/).
 
@@ -50,7 +50,7 @@ The layman's version is that DNS is the link between the way humans communicate 
 
 So let's now see where these legacy name resolution protocols (LLMNR, mDNS, and NBT-NS) come into the picture.
 
-In every functional domain, there is a [DNS server](https://learn.microsoft.com/en-us/windows-server/networking/dns/dns-overview) which is responsible for the name resolution process we just described. However, DNS can fail for various reasons, such as using single-label hostnames vs Fully Qualified Domain Names (FQDN) (e.g. `FS01` vs `FS01.MOLLYSEC.COM`), unreachable or misconfigured DNS servers, hosts that are not registered in DNS, etc.
+In every functional domain, there is a [DNS server](https://learn.microsoft.com/en-us/windows-server/networking/dns/dns-overview) which is responsible for the name resolution process we just described. However, DNS can fail for various reasons, such as using single-label hostnames vs fully qualified domain names (FQDN) (e.g. `FS01` vs `FS01.MOLLYSEC.COM`), unreachable or misconfigured DNS servers, hosts that are not registered in DNS, etc.
 
 In the case of a DNS failure, these legacy protocols kick in to save the day. They act as a fallback mechanism and their job is to resolve the hostname locally, for instance, by asking every other host (or a specific group of hosts) on the local area network (LAN) if they know who `FS01` is. This is what is called **Local Name Resolution**.
 
@@ -90,9 +90,9 @@ Let’s start with some terminology so we know what we are talking about:
 - **[NetBIOS over TCP/IP (NBT)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cifs/45170055-a0cd-4910-9228-801d5bf7ac84)**, as the name implies, is a NetBIOS extension that works over IP-based networks.
 - **NetBIOS over TCP/IP Name Service (NBT-NS)**, often referred to as **[NetBIOS Name Service (NBNS)](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cifs/760f8b7f-9a8a-4f0c-a044-1501a83a933b#gt_a28c2e64-21dd-46ca-9aea-42204fbb8411)**, is responsible for name registration and resolution in legacy Windows environments. It can operate using broadcast-based queries or leverage the **[Windows Internet Name Service (WINS)](https://learn.microsoft.com/en-us/windows-server/networking/technologies/wins/wins-top)**, a centralised name resolution service designed to reduce broadcast traffic by providing a dedicated server for NetBIOS name lookups.
 
-Although NBT-NS is a legacy protocol (introduced in 1983!), it is still widely present in modern environments. By default, Windows machines are configured to "*Use NetBIOS setting from the DHCP server*" which means that:
+Although NBT-NS is a legacy protocol (introduced in 1983!), it is still widely present in modern environments. By default, Windows machines are configured to `Use NetBIOS setting from the DHCP server` which means that:
 - If the DHCP server provides NetBIOS configuration, the client will follow its behaviour. For instance, if DHCP has a hybrid [node type](https://datatracker.ietf.org/doc/html/rfc2132#section-8.7) ([H-node](https://kb.gtkc.net/setting-netbios-node-types-in-dhcpd-conf)), a WINS server will be queried first, followed by broadcast-based resolution.
-- If the DHCP server provides no NetBIOS configuration or if the system uses a static IP address, NBT-NS will be enabled.
+- If the DHCP server does not provide a NetBIOS configuration or if the system uses a static IP address, NBT-NS will be enabled.
 
 {{<figure 
     src="/images/nbtns-settings.png"
@@ -101,11 +101,9 @@ Although NBT-NS is a legacy protocol (introduced in 1983!), it is still widely p
     caption=""
 >}}
 
-As a result, if no one bothers to explicitly disable NBT-NS, it will probably be there.
+As a result, if no one bothers to explicitly disable NBT-NS, it will probably be there. We can confirm that this is the case by starting a [Wireshark](https://www.wireshark.org/) capture on the UDP port 137 and then trying to resolve a non-existing path (the `<20>` part on the query represents a [NetBIOS suffix](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nbte/6dbf0972-bb15-4f29-afeb-baaae98416ed#:~:text=File%20Server%20Service), in this case a file server or SMB service):
 
-We can confirm that this is the case by starting a [Wireshark](https://www.wireshark.org/) capture on the UDP port 137 and then trying to resolve a non-existing path (the `<20>` part on the query represents a [NetBIOS suffix](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nbte/6dbf0972-bb15-4f29-afeb-baaae98416ed#:~:text=File%20Server%20Service), in this case a file server or SMB service):
-
-> Although NBT-NS is seen as broadcast-based name resolution, Windows systems may also issue unicast NetBIOS queries to specific hosts. These are part of the operating system’s resolution heuristics and may target known network devices (e.g. default gateways) as part of parallel resolution attempts.
+> *Although NBT-NS is seen as broadcast-based name resolution, Windows systems may also issue unicast NetBIOS queries to specific hosts. These are part of the operating system’s resolution heuristics and may target known network devices (e.g. default gateways) as part of parallel resolution attempts.*
 
 {{<figure 
     src="/images/nbt-ns-wireshark.png"
@@ -118,7 +116,7 @@ We can confirm that this is the case by starting a [Wireshark](https://www.wires
 
 [Link-Local Multicast Name Resolution (LLMNR)](https://www.rfc-editor.org/info/rfc4795/) was introduced around 2006-2007 as the successor of NBT-NS. It serves the same goal with NBT-NS: provide name resolution in scenarios where conventional DNS is not available. 
 
-Similarly with NBT-NS, LLMNR often exists on the domain because no one has bothered to disable it. As shown below, if the "*Turn off multicast name resolution*" policy setting is not explicitly enabled, then LLMNR will be present:
+Similarly with NBT-NS, LLMNR often exists on the domain because no one has bothered to disable it. As shown below, if the `Turn off multicast name resolution` policy setting is not explicitly enabled, then LLMNR will be present:
 
 {{<figure 
     src="/images/llmnr-setting.png"
@@ -156,7 +154,7 @@ So both NBT-NS and LLMNR seem to be enabled on almost every domain because no on
 
 # mDNS
 
-[Multicast DNS (mDNS)](https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/#multicast-dns-mdns) is another name resolution protocol designed to operate without a traditional DNS server (e.g. [a home network](https://wellstsai.com/en/post/mdns-iot-device-discovery/)). Similar to LLMNR, mDNS uses **multicast queries** sent to a predefined group address (`224.0.0.251` for IPv4).
+[Multicast DNS (mDNS)](https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/#multicast-dns-mdns) is another name resolution protocol designed to operate without a traditional DNS server (e.g. [a home network](https://wellstsai.com/en/post/mdns-iot-device-discovery/)). Similar to LLMNR, mDNS uses **multicast queries** sent to a predefined group address (`224.0.0.251`).
 
 mDNS is commonly associated with **service discovery protocols** (e.g. Apple’s Bonjour), and is widely used in environments where devices need to dynamically locate each other (e.g. printers, file sharing, or screen casting). In these scenarios, hosts advertise and discover services using names within the `.local` namespace.
 
@@ -167,7 +165,7 @@ mDNS is commonly associated with **service discovery protocols** (e.g. Apple’s
     caption="Image taken from [here](https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/)."
 >}} 
 
-From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted. Also, similar to LLMNR, it needs to be explicitly disabled.
+From a functionality perspective, mDNS behaves pretty much the same as LLMNR: when a host attempts to resolve a name and DNS fails, it may issue a multicast query asking if any host on the LAN can respond. As with the other protocols, the first valid response is typically accepted and it will be enabled if not explicitly disabled.
 
 {{<figure 
     src="/images/mdns-policy.png"
@@ -176,7 +174,7 @@ From a functionality perspective, mDNS behaves pretty much the same as LLMNR: wh
     caption=""
 >}}
 
-Similarly to LLMNR, we can confirm this by starting a Wireshark capture on the UDP port 5353 and trying to resolve something with the `.local` suffix:
+We can validate this by capturing traffic on the UDP port 5353 and trying to resolve something with the `.local` suffix:
 
 {{<figure 
     src="/images/mdns-wireshark.png"
