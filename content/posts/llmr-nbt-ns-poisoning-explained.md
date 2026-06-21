@@ -12,7 +12,7 @@ draft: false
 
 # Introduction
 
-**LLMNR/NBT-NS Poisoning** is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched [`Responder`](https://github.com/lgandx/Responder) hoping to capture a hash. In other words, you are already familiar with LLMNR/NBT-NS Poisoning, but have never really taken the time to explore what is actually happening behind the scenes.
+**LLMNR/NBT-NS Poisoning** is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched [`Responder`](https://github.com/lgandx/Responder) hoping to capture a hash. In other words, you are already familiar with the attack, but have never really taken the time to explore what is actually happening behind the scenes.
 
 {{<figure 
     src="/images/poisoning-responder-example.png"
@@ -54,7 +54,7 @@ In every functional domain, there is a [DNS server](https://learn.microsoft.com/
 
 In the case of a DNS failure, these legacy protocols kick in to save the day. They act as a fallback mechanism and their job is to resolve the hostname locally, for instance, by asking every other host (or a specific group of hosts) on the local area network (LAN) if they know who `FS01` is. This is what is called **Local Name Resolution**.
 
-On Windows systems, name resolution follows a specific hierarchical order:
+On Windows systems, name resolution follows a hierarchical order:
 
 1. First, the DNS server will be asked to resolve a hostname, URL, UNC path, etc.
 2. If the DNS fails, LLMNR (and mDNS in some cases) will be queried.
@@ -103,7 +103,9 @@ Although NBT-NS is a legacy protocol (introduced in 1983!), it is still widely p
 
 As a result, if no one bothers to explicitly disable NBT-NS, it will probably be there.
 
-We can confirm that this is the case by starting a [Wireshark](https://www.wireshark.org/) capture on the UDP port 137 and then trying to resolve a non-existing path (the `<20>` part on the query is a [NetBIOS suffix](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nbte/6dbf0972-bb15-4f29-afeb-baaae98416ed#:~:text=File%20Server%20Service)):
+We can confirm that this is the case by starting a [Wireshark](https://www.wireshark.org/) capture on the UDP port 137 and then trying to resolve a non-existing path (the `<20>` part on the query represents a [NetBIOS suffix](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nbte/6dbf0972-bb15-4f29-afeb-baaae98416ed#:~:text=File%20Server%20Service), in this case a file server or SMB service):
+
+> Although NBT-NS is seen as broadcast-based name resolution, Windows systems may also issue unicast NetBIOS queries to specific hosts. These are part of the operating system’s resolution heuristics and may target known network devices (e.g. default gateways) as part of parallel resolution attempts.
 
 {{<figure 
     src="/images/nbt-ns-wireshark.png"
@@ -140,7 +142,7 @@ While there are [articles](https://tcm-sec.com/llmnr-poisoning-and-how-to-preven
 
 - [TSIG](https://www.rfc-editor.org/info/rfc2845/) is based on **a group of hosts (e.g. domain-joined systems) sharing a secret key used to sign and verify LLMNR messages**. This can effectively prevent rogue devices on the network from responding to LLMNR queries. However, in case of a compromised domain-joined machine, the key will also be compromised anyway.
 - [IPsec](https://www.rfc-editor.org/info/rfc5406/) authenticates hosts rather than messages. It **can prove who sent the response**, but not whether that host is actually authoritative for the name it claims. It can leverage [Kerberos or an existing PKI](https://www.rfc-editor.org/info/rfc5406/#section-3.3) (e.g. ADCS), so it may seem to be a good choice in environments where these are already deployed. However, similarly to TSIG, if a domain-joined machine is compromised, it will already have a valid identity (e.g. cert or TGT). As a result, IPsec provides a similar level of protection to TSIG: it can prevent unauthorised devices from participating in LLMNR, but cannot stop already trusted hosts from impersonating arbitrary names.
-- [DNSSEC](https://www.rfc-editor.org/info/rfc4033/) is the last and strongest option; it **allows a responder to prove ownership of a name**. However, DNSSEC relies on a hierarchical trust model, which LLMNR lacks. Without delegation, trust anchors, or authoritative servers, there is no mechanism to establish or validate that trust.
+- [DNSSEC](https://www.rfc-editor.org/info/rfc4033/) is the last and (in theory) strongest option; it **allows a responder to prove ownership of a name**. However, DNSSEC relies on a hierarchical trust model, which LLMNR lacks. Without delegation, trust anchors, or authoritative servers, there is no mechanism to establish or validate that trust.
 
 If you ever wrote or read a pentest report which included LLMNR Poisoning as a finding, I am almost certain that the mitigation was to **just disable it**. But why is this the case? 
 
@@ -150,11 +152,11 @@ As we already said, DNS can fail for multiple reasons and companies need to not 
 
 At the end of the day, **LLMNR prioritises convenience over security** and creates an attack surface that can be exploited even in otherwise well-configured environments. As a result, the standard approach is to disable it entirely and eliminate the attack surface altogether rather than attempt to control an inherently insecure protocol.
 
-So both NBT-NS and LLMNR seem to enabled on almost every domain because no one has explicitly disabled them!
+So both NBT-NS and LLMNR seem to be enabled on almost every domain because no one has explicitly disabled them!
 
 # mDNS
 
-[Multicast DNS (mDNS)](https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/#multicast-dns-mdns) is another name resolution protocol designed to operate without a traditional DNS server (e.g. [a home network](https://wellstsai.com/en/post/mdns-iot-device-discovery/)). Unlike LLMNR and NBT-NS, which rely on broadcast traffic, mDNS uses **multicast queries** sent to a predefined group address (`224.0.0.251` for IPv4).
+[Multicast DNS (mDNS)](https://www.scoutdns.com/library/mdns-llmnr-and-local-name-resolution/#multicast-dns-mdns) is another name resolution protocol designed to operate without a traditional DNS server (e.g. [a home network](https://wellstsai.com/en/post/mdns-iot-device-discovery/)). Similar to LLMNR, mDNS uses **multicast queries** sent to a predefined group address (`224.0.0.251` for IPv4).
 
 mDNS is commonly associated with **service discovery protocols** (e.g. Apple’s Bonjour), and is widely used in environments where devices need to dynamically locate each other (e.g. printers, file sharing, or screen casting). In these scenarios, hosts advertise and discover services using names within the `.local` namespace.
 
