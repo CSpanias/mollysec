@@ -69,7 +69,7 @@ These fallback protocols rely on [broadcast](https://www.pynetlabs.com/differenc
     caption=""
 >}}
 
-The issue with these query types is that they can be [easily intercepted and spoofed](https://www.rfc-editor.org/info/rfc4795/#section-5.2) by establishing a Machine-in-the-Middle (MitM) position and responding to them with malicious replies, what is known as **LLMNR/NBT-NS poisoning**. This can result in capturing authentication attempts from users (typically NTLMv2 hashes) which can then be cracked offline or relayed to other services.
+The issue with these query types is that they can be [easily intercepted and spoofed](https://www.rfc-editor.org/info/rfc4795/#section-5.2) by establishing a Machine-in-the-Middle (MitM) position and responding to them with malicious replies, what is known as **LLMNR/NBT-NS poisoning**. This can result in capturing authentication attempts from users (typically NTLMv2 hashes) which can then be cracked offline or [relayed to other services](https://mollysec.com/posts/smb-signing-and-ntlm-relay-explained/).
 
 The below diagram shows how an attacker with an established MitM position can capture a user's credentials:
 
@@ -187,7 +187,7 @@ In practice, mDNS is less commonly associated with credential capture in Windows
 
 # Mitigation
 
-The most effective mitigation for these protocols is to [disable them](https://woshub.com/how-to-disable-netbios-over-tcpip-and-llmnr-using-gpo/) entirely. In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.
+The most effective mitigation for these protocols is to [disable them](https://woshub.com/how-to-disable-netbios-over-tcpip-and-llmnr-using-gpo/) entirely (see more here for disabling [NBT-NS](https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/active-directory-hardening-series---part-6-%E2%80%93-enforcing-smb-signing/4272168)). In modern environments, properly configured DNS infrastructure is sufficient for name resolution, and maintaining inherently insecure fallback mechanisms is not worth the risk.
 
 If disabling these protocols is not feasible, the impact of potential attacks can be reduced. Enforcing strong and unique passwords across all user accounts limits the effectiveness of credential capture by making offline cracking significantly harder. In addition, enabling protocol-level protections such as SMB signing as well as LDAP signing and channel binding can mitigate NTLM relay attacks by preventing attackers from forwarding captured authentication to other services.
 

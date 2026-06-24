@@ -123,22 +123,6 @@
 
 <article class="post-entry"> 
   <header class="entry-header">
-    <h2 class="entry-hint-parent">LLMNR/NBT-NS Poisoning Explained
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>Introduction LLMNR/NBT-NS Poisoning is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched Responder hoping to capture a hash. In other words, you are already familiar with LLMNR/NBT-NS Poisoning, but have never really taken the time to explore what is actually happening behind the scenes.
-Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
-...</p>
-  </div>
-  <footer class="entry-footer">
-
-<span title='2026-06-20 00:00:00 +0000 UTC'>June 20, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
-  <a class="entry-link" aria-label="post link to LLMNR/NBT-NS Poisoning Explained" href="http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
     <h2 class="entry-hint-parent">SMB Signing and NTLM Relay Explained
       <span class="entry-hint" title="Draft">
         <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
@@ -149,12 +133,30 @@ Under the right conditions, this attack vector can result in getting an NTLMv2 h
     </h2>
   </header>
   <div class="entry-content">
-    <p>Introduction TL;DR on NTLM Relay Mitigation</p>
+    <p>Introduction TL;DR on SMB Server Message Block (SMB) is a network file sharing protocol used in Windows environments for remote file operations, such as reading and writing files, as well as for various administrative tasks, like event logging and auditing.
+If you have ever tried to solve an Active Directory (AD)-related lab (e.g. any of the VL labs) you would have possibly leveraged SMB on TCP port 445 to get an initial foothold via file enumeration, uploading malicious files, or a combination of LLMNR poisoning and NTLM relay attack.
+...</p>
+  </div>
+  <footer class="entry-footer">
+
+<span title='2026-06-24 00:00:00 +0000 UTC'>June 24, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
+  <a class="entry-link" aria-label="post link to SMB Signing and NTLM Relay Explained" href="http://localhost:1313/posts/smb-signing-and-ntlm-relay-explained/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">LLMNR/NBT-NS Poisoning Explained
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Introduction LLMNR/NBT-NS Poisoning is one of the most consistent vulnerabilities I come across during internal tests. Even if the name does not ring a bell, chances are you have, at some point in a lab, launched Responder hoping to capture a hash:
+If that’s the case, you are already familiar with the attack, but have never really taken the time to explore what is actually happening behind the scenes. Under the right conditions, this attack vector can result in getting an NTLMv2 hash which can be recovered or relayed (e.g. combined with something such as the lack of SMB signing). It can be our way from:
+...</p>
   </div>
   <footer class="entry-footer">
 
 <span title='2026-06-20 00:00:00 +0000 UTC'>June 20, 2026</span>&nbsp;·&nbsp;<span>mollysec</span></footer>
-  <a class="entry-link" aria-label="post link to SMB Signing and NTLM Relay Explained" href="http://localhost:1313/posts/smb-signing/"></a>
+  <a class="entry-link" aria-label="post link to LLMNR/NBT-NS Poisoning Explained" href="http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/"></a>
 </article>
 
 <article class="post-entry"> 

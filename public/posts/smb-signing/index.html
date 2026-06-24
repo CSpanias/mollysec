@@ -137,12 +137,101 @@
 </div>
   </header> 
   <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<h1 id="tldr-on-smb">TL;DR on SMB<a hidden class="anchor" aria-hidden="true" href="#tldr-on-smb">#</a></h1>
+<p>In Active Directory environments, Server Message Block (SMB) is heavily used for authentication, file sharing, Group Policy distribution, and administrative operations, making its security critical.</p>
+<h1 id="smb-signing">SMB Signing<a hidden class="anchor" aria-hidden="true" href="#smb-signing">#</a></h1>
+<p><a href="https://learn.microsoft.com/en-gb/troubleshoot/windows-server/networking/overview-server-message-block-signing">SMB signing</a> is a security mechanism used to confirm the client&rsquo;s and server&rsquo;s identities as well as the integrity of the message.An oversimplification of the process is this:</p>
+<ol>
+<li>A <a href="https://learn.microsoft.com/en-us/archive/blogs/openspecification/smb-2-and-smb-3-security-in-windows-10-the-anatomy-of-signing-and-cryptographic-keys#key-consideration">session key</a> is established between the server and the client during the authentication steps.</li>
+<li>Each message is then hashed.</li>
+<li>Each hash is signed signed using the session key.</li>
+</ol>
 <figure>
-    <img loading="lazy" src="/images/.png" width="700"/> 
+     <img loading="lazy" src="/images/smb-signing.png"
+          alt="Inspecting SMB traffic and SMB signing on Wireshark." width="950"/> 
+ </figure>
+
+<p>The default behaviour on Windows systems depends on mostly two variables: if the machine is a Domain Controller (DC) and if we are asking from the server (when other machines connect to it) or client (when it connects to other machines) side.</p>
+<table>
+  <thead>
+      <tr>
+          <th></th>
+          <th>Server</th>
+          <th>Client</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>DC</strong></td>
+          <td>Enforced</td>
+          <td>Optional</td>
+      </tr>
+      <tr>
+          <td><strong>Not DC</strong></td>
+          <td>No</td>
+          <td>Optional</td>
+      </tr>
+  </tbody>
+</table>
+<p>We can inspect this behaviour via the UI (Local Policies):</p>
+<figure>
+    <img loading="lazy" src="/images/smb-server-settings-dc-ui.png"
+         alt="The default SMB server configuration on Domain Controllers via UI." width="950"/> 
 </figure>
 
-<h1 id="tldr-on-ntlm-relay">TL;DR on NTLM Relay<a hidden class="anchor" aria-hidden="true" href="#tldr-on-ntlm-relay">#</a></h1>
+<p>or PowerShell:</p>
+<figure>
+    <img loading="lazy" src="/images/smb-server-settings-dc.png"
+         alt="The default SMB server configuration on Domain Controllers via PowerShell." width="950"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/smb-server-settings-wk-ps.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="950"/> 
+</figure>
+
+<p>The above &ldquo;inconsistency&rdquo; actually makes sense once we have a think about the role of each system. DCs are the most important components of the domain; compromising a DC has much more severe implications than compromising a single server. As a result, they must prioritise security and not convienence. On the other hand, non-DC machines (servers or workstations) must maintain compatibility with a wide range of systems (e.g. legacy devices, embedded systems, etc.) that may not support SMB signing at all. Thus, they default to a more permissive configuration.</p>
+<p>Let&rsquo;s now see what SMB signing prevents attackers from doing.</p>
+<h1 id="ntlm-relay">NTLM Relay<a hidden class="anchor" aria-hidden="true" href="#ntlm-relay">#</a></h1>
+<figure>
+    <img loading="lazy" src="/images/no-smb-signing-wireshark.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="950"/> 
+</figure>
+
+<p>Let&rsquo;s say we are performing an internal test, we know that the LLMNR protocol is enabled, and we are trying our luck with an <a href="https://mollysec.com/posts/llmr-nbt-ns-poisoning-explained/">LLMNR poisoning</a> attack.</p>
+<figure>
+    <img loading="lazy" src="/images/smb-signing-plus-llmr-poisoning.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="950"/> 
+</figure>
+
+<p>We were lucky to capture the hash of an Administrator, but, unfortunately, it is not crackable. Our only other option is to use it as it is, i.e., check if an NTLM relay attack is possible in the environment.</p>
+<figure>
+    <img loading="lazy" src="/images/signing-disabled-nxc.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="950"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/smb-signing-ntlm-relay1.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="950"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/smb-signing-ntlm-relay2.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="950"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/smb-signing-ntlm-relay3.png"
+         alt="The default SMB server configuration on workstations via PowerShell." width="550"/> 
+</figure>
+
 <h1 id="mitigation">Mitigation<a hidden class="anchor" aria-hidden="true" href="#mitigation">#</a></h1>
+<p>It is recommended to configure systems to require SMB signing on both clients and servers, particularly within domain environments. This can typically be enforced via Group Policy under security settings related to Microsoft network client and server communications. In addition, message signing can be configured as &lsquo;Required&rsquo; in the host&rsquo;s configuration. Please see Microsoft&rsquo;s guidance within the references below for full details on enforcing required signing.</p>
+<h3 id="references">References<a hidden class="anchor" aria-hidden="true" href="#references">#</a></h3>
+<ul>
+<li><a href="https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/active-directory-hardening-series---part-6-%E2%80%93-enforcing-smb-signing/4272168">https://techcommunity.microsoft.com/blog/coreinfrastructureandsecurityblog/active-directory-hardening-series&mdash;part-6-–-enforcing-smb-signing/4272168</a></li>
+<li><a href="https://www.lrqa.com/en/cyber-labs/hash-relaying-the-path-to-domain-admin/">https://www.lrqa.com/en/cyber-labs/hash-relaying-the-path-to-domain-admin/</a></li>
+</ul>
 
 
   </div>
