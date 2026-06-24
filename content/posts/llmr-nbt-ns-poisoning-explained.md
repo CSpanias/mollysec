@@ -4,7 +4,7 @@ date: "2026-06-20"
 author: "mollysec"
 description: "How legacy name resolution protocols work and why they still persist more than 40 years later."
 featured: true
-tags: []
+tags: ["LLMNR","NBT-NS","NBNS","mDNS","Poisoning","Responder","AitM"]
 categories: []
 series: ""
 draft: false

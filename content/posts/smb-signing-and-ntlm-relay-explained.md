@@ -4,7 +4,7 @@ date: "2026-06-24"
 author: "mollysec"
 description: "How SMB signing works, why it exists, and its role in preventing NTLM relay attacks."
 featured: true
-tags: []
+tags: ["SMB","SMB Signing","NTLM Relay","LLMNR Poisoning","Responder","AitM"]
 categories: []
 series: ""
 draft: false
