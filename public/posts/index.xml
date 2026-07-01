@@ -6,8 +6,22 @@
     <description>Recent content in Posts on mollysec</description>
     <generator>Hugo</generator>
     <language>en-gb</language>
-    <lastBuildDate>Wed, 24 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Password Audits Part 4: Analysing Results</title>
+      <link>http://localhost:1313/posts/password-audits-part-4-asdf/</link>
+      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-4-asdf/</guid>
+      <description>Generating meaningful statistics.</description>
+    </item>
+    <item>
+      <title>LDAP Signing and Channel Binding</title>
+      <link>http://localhost:1313/posts/ldap-singing-and-channel-binding/</link>
+      <pubDate>Wed, 24 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/ldap-singing-and-channel-binding/</guid>
+      <description>How LDAP signing and channel binding work, why they exist, and their role in preventing NTLM relay attacks.</description>
+    </item>
     <item>
       <title>SMB Signing and NTLM Relay Explained</title>
       <link>http://localhost:1313/posts/smb-signing-and-ntlm-relay-explained/</link>

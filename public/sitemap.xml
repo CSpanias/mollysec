@@ -3,15 +3,66 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>http://localhost:1313/</loc>
-    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+    <lastmod>2026-06-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/posts/password-audits-part-4-asdf/</loc>
+    <lastmod>2026-06-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/</loc>
+    <lastmod>2026-06-26T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/aitm/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/ldap/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/ldap-channel-binding/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/ldap-signing/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/posts/ldap-singing-and-channel-binding/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/llmnr-poisoning/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/ntlm-relay/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/responder/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/smb/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/smb-signing/</loc>
     <lastmod>2026-06-24T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/smb-signing-and-ntlm-relay-explained/</loc>
     <lastmod>2026-06-24T00:00:00+00:00</lastmod>
   </url><url>
+    <loc>http://localhost:1313/tags/</loc>
+    <lastmod>2026-06-24T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/llmnr/</loc>
+    <lastmod>2026-06-20T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/</loc>
+    <lastmod>2026-06-20T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/mdns/</loc>
+    <lastmod>2026-06-20T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/nbns/</loc>
+    <lastmod>2026-06-20T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/nbt-ns/</loc>
+    <lastmod>2026-06-20T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/tags/poisoning/</loc>
     <lastmod>2026-06-20T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/password-audits-part-3/</loc>
@@ -39,9 +90,6 @@
     <lastmod>2026-05-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/categories/review/</loc>
-    <lastmod>2026-05-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/tags/</loc>
     <lastmod>2026-05-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/password-audits-part-1/</loc>
