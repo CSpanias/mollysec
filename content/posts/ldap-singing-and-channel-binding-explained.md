@@ -1,5 +1,5 @@
 ---
-title: "LDAP Signing and Channel Binding"
+title: "LDAP Signing and Channel Binding Explained"
 date: "2026-07-01"
 author: "mollysec"
 description: "How LDAP signing and channel binding work, why they exist, and their role in preventing NTLM relay attacks."
