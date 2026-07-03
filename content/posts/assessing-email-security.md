@@ -1,13 +1,13 @@
 ---
 title: "Email Security Explained: SPF, DKIM, DMARC, and MTA-STS"
-date: "2026-07-02"
+date: "2026-07-03"
 author: "mollysec"
 description: "A dive into modern email authentications and their role in preventing spoofing"
 featured: true
 tags: ["email","spf","dkim","dmarc","mta-sts", "spoofing"]
 categories: ""
 series: ""
-draft: true
+draft: false
 ---
 
 # Introduction
@@ -361,6 +361,7 @@ The objective is not to deliver a malicious payload, but rather to determine whe
 
 # Automated Testing: Email-Audit
 
+WIP!
 
 # Conclusion
 
