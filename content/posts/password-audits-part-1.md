@@ -4,7 +4,7 @@ date: "2026-03-13"
 author: "mollysec"
 description: "NTDS extraction in practice: DCSync vs VSS"
 featured: true
-tags: []
+tags: ["ntds", "hashcat", "passwords", "hashes", "ntlm", "lm", "dcsync", "drsuapi", "vss"]
 categories: []
 series: "Password Audits"
 draft: false

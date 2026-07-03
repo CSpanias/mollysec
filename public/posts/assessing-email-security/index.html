@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Email Security Explained: SPF, DKIM, DMARC, and MTA-STS | mollysec</title>
+<meta name="keywords" content="email, spf, dkim, dmarc, mta-sts, spoofing">
+<meta name="description" content="A dive into modern email authentications and their role in preventing spoofing">
+<meta name="author" content="mollysec">
+<link rel="canonical" href="http://localhost:1313/posts/assessing-email-security/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/assessing-email-security/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="mollysec (Alt + H)">mollysec</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Email Security Explained: SPF, DKIM, DMARC, and MTA-STS
+      <span class="entry-hint" title="Draft">
+        <svg xmlns="http://www.w3.org/2000/svg" height="35" viewBox="0 -960 960 960" fill="currentColor">
+          <path
+            d="M160-410v-60h300v60H160Zm0-165v-60h470v60H160Zm0-165v-60h470v60H160Zm360 580v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q9 9 13 20t4 22q0 11-4.5 22.5T862.09-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z" />
+        </svg>
+      </span>
+    </h1>
+    <div class="post-description">
+      A dive into modern email authentications and their role in preventing spoofing
+    </div>
+    <div class="post-meta">
+
+<span title='2026-07-02 00:00:00 +0000 UTC'>July 2, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<p>One security-related topic that is almost never discussed in courses, such as <a href="https://academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist">CPTS</a> or <a href="https://www.offsec.com/courses/pen-200/">OSCP</a>, is <strong>email security</strong>. There is almost always a phishing exercise, but it never goes more than that. You never get to learn why the spoofed email was accepted in the first place and what could be done to prevent it.</p>
+<p>This is somewhat strange given that phishing remains one of the <a href="https://us.norton.com/blog/privacy/email-security">most common methods for obtaining an initial foothold in an environment</a>!</p>
+<figure>
+    <img loading="lazy" src="/images/email-attacks.png"
+         alt="Common email security threats." width="550"/> <figcaption>
+            <p>Image taken from <a href="https://us.norton.com/blog/privacy/email-security">here</a>.</p>
+        </figcaption>
+</figure>
+
+<p>In addition, it is also a common day-to-day pentesting task, typically, a part of an external assessment. Why no course with the goal of &ldquo;preparing&rdquo; you for landing your first pentesting job bothers to talk about it?</p>
+<p>I had a thorough research and there aren&rsquo;t many resources (or tools!) about how to go about an &ldquo;email configuration review&rdquo;, so I thought: why not create one myself?</p>
+<p>So here we are!</p>
+<h1 id="tldr-on-dns">TL;DR on DNS<a hidden class="anchor" aria-hidden="true" href="#tldr-on-dns">#</a></h1>
+<p>Before discussing the fun stuff (SPF, DKIM, and DMARC), we need to briefly talk about the Domain Name System (DNS).</p>
+<p>DNS&rsquo;s primary purpose is to translate human-friendly domain names (e.g. <code>kairos-sec.com</code>) into IP addresses that computers can use to communicate.</p>
+<p>However, DNS is not limited to storing IP addresses. It can also store many other types of information, including mail routing instructions, domain ownership validation records, and email security policies. This information is stored in <strong>DNS records</strong>; some of the most common record types are shown below:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Record</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>A</code></td>
+          <td>Maps a domain name to an IPv4 address</td>
+      </tr>
+      <tr>
+          <td><code>AAAA</code></td>
+          <td>Maps a domain name to an IPv6 address</td>
+      </tr>
+      <tr>
+          <td><code>CNAME</code></td>
+          <td>Creates an alias to another hostname</td>
+      </tr>
+      <tr>
+          <td><code>NS</code></td>
+          <td>Specifies the authoritative name servers for a domain</td>
+      </tr>
+      <tr>
+          <td><code>MX</code></td>
+          <td>Identifies the mail servers responsible for receiving emails</td>
+      </tr>
+      <tr>
+          <td><code>TXT</code></td>
+          <td>Stores arbitrary text information (e.g. SPF, DKIM, and DMARC policies)</td>
+      </tr>
+  </tbody>
+</table>
+<p>For our purposes, the most important record types are: <code>A</code>, <code>MX</code> and <code>TXT</code>. As an example, we can inspect the DNS records of the <code>kairos-sec.com</code> domain:</p>
+<figure>
+    <img loading="lazy" src="/images/dns-records.png"
+         alt="Querying the DNS records (A, NS, MX, and TXT) of kairos-sec.com." width="950"/> 
+</figure>
+
+<p>The detail-oriented readers out there have probably noticed that although I have listed (twice now!) SPF, DKIM, and DMARC under the <code>TXT</code> record, only the SPF is showing on the above screenshot. This is because SPF is typically published directly under the root domain, while DKIM and DMARC are usually stored under dedicated subdomains.</p>
+<p>But more on that later. Let&rsquo;s dive in!</p>
+<h1 id="email-authentication">Email Authentication<a hidden class="anchor" aria-hidden="true" href="#email-authentication">#</a></h1>
+<h2 id="spf">SPF<a hidden class="anchor" aria-hidden="true" href="#spf">#</a></h2>
+<p>The <a href="https://datatracker.ietf.org/doc/html/rfc7208">Sender Policy Framework (SPF)</a> is a DNS TXT record published by a domain owner that <strong>specifies which servers are authorised to send email on behalf of the domain</strong>. An SPF record would typically consist of the following parts:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Component</th>
+          <th>Meaning</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>v=spf1</code></td>
+          <td>SPF version identifier</td>
+      </tr>
+      <tr>
+          <td><code>ip4:x.x.x.x</code></td>
+          <td>Explicitly authorised sending IPs</td>
+      </tr>
+      <tr>
+          <td><code>include:&lt;domain&gt;</code></td>
+          <td>Authorised third-party mail providers</td>
+      </tr>
+      <tr>
+          <td><code>[-/~/+]all</code></td>
+          <td>Policy for unauthorised sending mail servers</td>
+      </tr>
+  </tbody>
+</table>
+<p>From a security perspective, we are primarily interested in the <code>all</code> component, as it defines what happens when a sender is <strong>not</strong> listed in the SPF record. The following three policies are available:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Value</th>
+          <th>Behaviour</th>
+          <th>Use case</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>-all</code></td>
+          <td>Reject unauthorised senders (<code>Fail</code>)</td>
+          <td>Domains with a fully identified sending infrastructure</td>
+      </tr>
+      <tr>
+          <td><code>~all</code></td>
+          <td>Mark unauthorised senders as suspicious (<code>SoftFail</code>)</td>
+          <td>Common when sending sources are not yet fully known</td>
+      </tr>
+      <tr>
+          <td><code>+all</code></td>
+          <td>Allow all senders (<code>Pass</code>)</td>
+          <td>Testing, backwards compatibility, or (more commonly) misconfiguration</td>
+      </tr>
+  </tbody>
+</table>
+<p>Now that we understand what the SPF record does, let&rsquo;s see how a receiving mail server uses this information when processing incoming messages. We will use the domain of our favourite pentesting company, <a href="https://kairos-sec.com/"><code>kairos-sec.com</code></a>, to see how this works in practice.</p>
+<p>Let&rsquo;s start by having a look at its TXT record:</p>
+<figure>
+    <img loading="lazy" src="/images/email-security-spf-example.png"
+         alt="An example SPF record of kairos-sec.com." width="600"/> 
+</figure>
+
+<p>The above <code>TXT</code> record shows a list of mail servers that are authorised to send email on behalf of <code>kairos-sec.com</code>. It also shows what happens when an email is sent by a server that is not included in that list; in this case, due to its <code>SoftFail</code> policy, it will probably be flagged as spam.</p>
+<blockquote>
+<p><em>Notice that evaluating a single SPF record often requires multiple DNS lookups. In our example, the <code>a</code>, <code>mx</code>, and <code>include</code> mechanisms all trigger additional queries. To prevent excessive DNS resolution, <a href="https://mxtoolbox.com/dmarc/spf/spf-lookup-limit">SPF evaluation is limited to a maximum of 10 DNS lookups</a>. Once exceeded, SPF evaluation results in a <code>PermError</code>.</em></p>
+</blockquote>
+<p>So how is the SPF record is used in practice? Glad you asked! Let&rsquo;s go through an example:</p>
+<ol>
+<li>An email is sent claiming to originate from <code>tyler.ceo@kairos-sec.com</code>.</li>
+<li>The receiving mail server extracts the sender domain (<code>kairos-sec.com</code>) and queries its SPF record.</li>
+<li>It then checks whether the IP address of the sending mail server is authorised by that SPF record.</li>
+<li>Based on the SPF result (and other controls such as DMARC), the receiving server decides how to handle the email.</li>
+</ol>
+<p>On the below diagram, the main takeaway is that because <strong>the malicious email is sent via an unauthorised mail server</strong>, it does not match the SPF policy, and, as a result, the receiving server produces a SoftFail result (<code>~all</code>):</p>
+<figure>
+    <img loading="lazy" src="/images/email-security-spf-diagram.png"
+         alt="A diagram showing how SPF policies work in practice." width="950"/> 
+</figure>
+
+<p>It&rsquo;s important to reiterate that <strong>the SPF only cares about the sending mail server</strong>. As long as an email originates from an authorised server, SPF is happy and it does not care about the message&rsquo;s contents or the sender&rsquo;s address.</p>
+<p>This is where DKIM comes into play.</p>
+<h2 id="dkim">DKIM<a hidden class="anchor" aria-hidden="true" href="#dkim">#</a></h2>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc6376">DomainKeys Identified Mail (DKIM)</a> addresses this problem by allowing domains to <strong>cryptographically sign emails</strong> using public-key cryptography. Receiving mail servers can verify those signatures and confirm that the email was authorised by the sending domain (<strong>authenticity</strong>) and the signed portions of it have not been modified (<strong>integrity</strong>).</p>
+<p>To achieve that, DKIM adds a <code>DKIM-Signature</code> header to every signed email. An example is shown below:</p>
+<figure>
+    <img loading="lazy" src="/images/email-headers-dots.png"
+         alt="Inspecting the DKIM-Signature header of an email received by the kairos-sec.com domain." width="950"/> 
+</figure>
+
+<figure>
+    <img loading="lazy" src="/images/kairos-sec-dkim-signature-header.png"
+         alt="Inspecting the DKIM-Signature header of an email received by the kairos-sec.com domain." width="950"/> 
+</figure>
+
+<p>The highlighted fields contain the following information:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Meaning</th>
+          <th>Value</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>a=</code></td>
+          <td>Signing algorithm used to generate the signature</td>
+          <td><code>rsa-sha256</code></td>
+      </tr>
+      <tr>
+          <td><code>d=</code></td>
+          <td>Domain associated with the DKIM signature</td>
+          <td><code>kairos-sec.com</code> (<em>ignore the rest</em>)</td>
+      </tr>
+      <tr>
+          <td><code>s=</code></td>
+          <td>DKIM selector used to identify the public key in DNS</td>
+          <td><code>20230601</code> (<em>timestamp-based</em>)</td>
+      </tr>
+      <tr>
+          <td><code>h=</code></td>
+          <td>List of email headers covered by the signature</td>
+          <td>15 signed header entries</td>
+      </tr>
+      <tr>
+          <td><code>bh=</code></td>
+          <td>Hash of the email body</td>
+          <td>Base64 encoded hash</td>
+      </tr>
+      <tr>
+          <td><code>b=</code></td>
+          <td>Digital signature generated using the sender&rsquo;s private key</td>
+          <td>The <code>DKIM-Signature</code> that is being verified</td>
+      </tr>
+  </tbody>
+</table>
+<p>It is worth noting that if any of the 15 signed header entries included in the <code>h=</code> field are modified in transit, the signature validation will fail because the receiving mail server will compute a different hash than the one originally signed. As these entries cover most of the headers that define the email, <strong>even seemingly minor changes can invalidate the signature</strong>.</p>
+<p>To perform this validation, the receiving mail server must obtain the public key corresponding to the private key that was originally used to generate the signature. Rather than publishing a single key, domains can maintain multiple DKIM key pairs simultaneously (e.g. for key rotation or different email providers).</p>
+<p>This is achieved using a <strong>selector</strong>, a label included within the <code>DKIM-Signature</code> header that tells the receiving mail server where to find the appropriate public key in DNS. The selector often has a common value (e.g.  <code>selector1</code> or <code>default</code>), but that&rsquo;s not mandatory; these are just naming conventions adopted by the industry.</p>
+<blockquote>
+<p><em>The selector shown above (<code>20230601</code>) comes from an old email and follows a timestamp-based naming convention. This selector no longer exists in DNS as the corresponding key has since been rotated. Therefore, for the remainder of this section, we will use the currently active selector (<code>default</code>).</em></p>
+</blockquote>
+<p>Once the selector is known, the receiving mail server knows which DNS record contains the public key:</p>
+<figure>
+    <img loading="lazy" src="/images/kairos-sec-dkim.png"
+         alt="The DKIM record of the kairos.sec domain." width="950"/> 
+</figure>
+
+<p>The record consists of the following components:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Component</th>
+          <th>Meaning</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>v=DKIM1</code></td>
+          <td>DKIM version identifier</td>
+      </tr>
+      <tr>
+          <td><code>k=rsa</code></td>
+          <td>Key type</td>
+      </tr>
+      <tr>
+          <td><code>p=</code></td>
+          <td>Public key used for signature verification</td>
+      </tr>
+  </tbody>
+</table>
+<p>Okay, enough playing with the alphabet for now! Let&rsquo;s see how the end-to-end DKIM authentication flow looks like:</p>
+<ol>
+<li>The sending mail server computes a hash of the email and signs it using its private key.</li>
+<li>The receiving mail server obtains the email which includes the <code>DKIM-Signature</code>.</li>
+<li>It uses the <code>selector</code> to download the corresponding public key from DNS.</li>
+<li>It then hashes the message, verifies the signature using the public key, and compares the results.</li>
+</ol>
+<figure>
+    <img loading="lazy" src="/images/email-dkim-flow.png"
+         alt="The authentication flow of DKIM." width="950"/> 
+</figure>
+
+<p>It is important to note that <strong>the presence of a valid DKIM record only confirms that the domain can support DKIM signature validation</strong>. It does not guarantee that DKIM is actually implemented. To validate that, we need to inspect the <code>Authentication-Results</code> section of the email headers and verify that the signature was successfully checked:</p>
+<figure>
+    <img loading="lazy" src="/images/kairos-sec-dkim-auth-results.png"
+         alt="Validating the implementation of the DKIM header for an email received by the kairos-sec.com domain." width="950"/> 
+</figure>
+
+<p>The <code>dkim=pass</code> result confirms that the receiving mail server successfully validated the DKIM signature using the public key associated with the selector <code>20230601</code> (<em>still using the old email as an example!</em>).</p>
+<p>To recap: SPF checks if the sending mail server is authorised, while DKIM verifies the authenticity and integrity of the email itself. But none of them answers the following question: <strong>what happens when authentication fails</strong>?</p>
+<p>This is the role of DMARC.</p>
+<h2 id="dmarc">DMARC<a hidden class="anchor" aria-hidden="true" href="#dmarc">#</a></h2>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc7489">Domain-based Message Authentication, Reporting, and Conformance (DMARC)</a> builds on top of SPF and DKIM by introducing <strong>policy enforcement</strong>. Domain owners can publish a DMARC record that instructs receiving mail servers how emails that fail authentication checks should be handled. DMARC records are stored as <code>TXT</code> records under the <code>_dmarc</code> subdomain.</p>
+<p>Unfortunately, <code>kairos-sec.com</code> does not have a DMARC policy, thus, we&rsquo;ll need to change domains for this section:</p>
+<figure>
+    <img loading="lazy" src="/images/kairos-sec-dmarc-record.png"
+         alt="Querying the DMARC record of the kairos-sec.com domain." width="950"/> 
+</figure>
+
+<p>Let&rsquo;s try its closest competitor, <a href="https://www.hackthebox.com/"><code>hackthebox.com</code></a>:</p>
+<figure>
+    <img loading="lazy" src="/images/htb-com-dmarc-record.png"
+         alt="Querying the DMARC record of the hackthebox.com domain." width="850"/> 
+</figure>
+
+<p>The most relevant DMARC fields from the above record are:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Component</th>
+          <th>Meaning</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>v=</code></td>
+          <td>DMARC version identifier</td>
+      </tr>
+      <tr>
+          <td><code>p=</code></td>
+          <td>Policy for the primary domain</td>
+      </tr>
+      <tr>
+          <td><code>pct=</code></td>
+          <td>Percentage of messages the policy applies to</td>
+      </tr>
+      <tr>
+          <td><code>rua=</code></td>
+          <td>Address used for aggregate reports</td>
+      </tr>
+      <tr>
+          <td><code>fo=</code></td>
+          <td>Conditions that trigger forensic reports</td>
+      </tr>
+      <tr>
+          <td><code>sp=</code></td>
+          <td>Policy applied to subdomains</td>
+      </tr>
+  </tbody>
+</table>
+<p>The most important among them is the <strong>policy</strong> field (<code>p=</code>). This determines how receiving mail servers should handle emails that fail authentication checks. It can have three values:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Policy</th>
+          <th>Behaviour</th>
+          <th>Use Case</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>none</code></td>
+          <td>Monitor only; do not enforce</td>
+          <td>Initial deployment, testing, and collecting DMARC reports</td>
+      </tr>
+      <tr>
+          <td><code>quarantine</code></td>
+          <td>Treat messages as suspicious (e.g. spam folder)</td>
+          <td>Gradual enforcement while reducing the risk of blocking legitimate emails</td>
+      </tr>
+      <tr>
+          <td><code>reject</code></td>
+          <td>Reject unauthorised messages outright</td>
+          <td>Mature email environments with well-understood sending infrastructure</td>
+      </tr>
+  </tbody>
+</table>
+<p>A domain using <code>p=reject</code> with <code>pct=100</code> instructs receiving mail servers to apply the policy to all messages and reject those that fail DMARC evaluation. This provides the strongest protection against spoofing attempts. The <code>hackthebox.com</code> domain currently uses a more relaxed policy (<code>quarantine</code>), which still provides protection against spoofing while reducing the likelihood of legitimate emails being rejected due to authentication issues.</p>
+<p>To recap once again: SPF authorises mail servers, DKIM verifies the email&rsquo;s authenticity and integrity, and DMARC handles authentication failures. None of them cares about protecting the SMTP connection itself.</p>
+<p>To address this aspect, MTA-STS comes to the rescue; our final piece of the puzzle!</p>
+<h2 id="mta-sts">MTA-STS<a hidden class="anchor" aria-hidden="true" href="#mta-sts">#</a></h2>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc8461">Mail Transfer Agent Strict Transport Security (MTA-STS)</a> is a DNS-based mechanism used to <strong>enforce Transport Layer Security (TLS) encryption</strong> for SMTP connections between mail servers.</p>
+<p>Unlike SPF, DKIM, and DMARC, which focus on authentication and spoofing prevention, MTA-STS is concerned with <strong>protecting email in transit</strong>. This helps protect email delivery from <a href="https://elie.net/blog/understanding-how-tls-downgrade-attacks-prevent-email-encryption">STARTTLS downgrade and Adversary-in-the-Middle (AitM) attacks</a> that attempt to disable TLS and force plaintext communication.</p>
+<p>Let&rsquo;s see how the MTA-STS record of the <code>hackthebox.com</code> domain is configured:</p>
+<figure>
+    <img loading="lazy" src="/images/htb-com-mta-sts.png"
+         alt="Querying the MTA-STS record of the hackthebox.com domain." width="450"/> 
+</figure>
+
+<p>The record consists of the following fields:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Component</th>
+          <th>Meaning</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>v=STSv1</code></td>
+          <td>MTA-STS version identifier</td>
+      </tr>
+      <tr>
+          <td><code>id=</code></td>
+          <td>Policy version identifier used to signal policy updates</td>
+      </tr>
+  </tbody>
+</table>
+<p>The presence of this record indicates that the domain advertises support for MTA-STS. However, unlike SPF, DKIM, and DMARC, the actual MTA-STS policy is not stored directly in DNS. Instead, it must be hosted separately over HTTPS at <code>https://mta-sts.&lt;domain&gt;/.well-known/mta-sts.txt</code>.</p>
+<p>Unfortunately, although <code>hackthebox.com</code> publishes an MTA-STS record, the corresponding policy file was not accessible at the time of writing. As a result, we cannot fully validate the deployment.</p>
+<p>To see what an MTA-STS policy looks like in practice, let&rsquo;s use <code>google.com</code>:</p>
+<figure>
+    <img loading="lazy" src="/images/google-com-mta-sts-https.png"
+         alt="Querying the MTA-STS record of the hackthebox.com domain." width="500"/> 
+</figure>
+
+<p>The policy consists of the following fields:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Component</th>
+          <th>Meaning</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>version</code></td>
+          <td>MTA-STS version</td>
+      </tr>
+      <tr>
+          <td><code>mode</code></td>
+          <td>Enforcement mode</td>
+      </tr>
+      <tr>
+          <td><code>mx</code></td>
+          <td>Authorised mail servers</td>
+      </tr>
+      <tr>
+          <td><code>max_age</code></td>
+          <td>Policy validity period (<em>seconds</em>)</td>
+      </tr>
+  </tbody>
+</table>
+<p>The crucial field here is the <strong>mode</strong>, which determines how strictly the policy is enforced:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Mode</th>
+          <th>Behaviour</th>
+          <th>Use Case</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>none</code></td>
+          <td>Policy published but not enforced</td>
+          <td>Initial deployment</td>
+      </tr>
+      <tr>
+          <td><code>testing</code></td>
+          <td>Reports failures without enforcing requirements</td>
+          <td>Validation and monitoring</td>
+      </tr>
+      <tr>
+          <td><code>enforce</code></td>
+          <td>Require TLS and trusted <code>MX</code> hosts for delivery</td>
+          <td>Production deployment</td>
+      </tr>
+  </tbody>
+</table>
+<p>A domain configured with <code>mode: enforce</code> instructs compatible sending mail servers to deliver email only over validated TLS connections and only to the hosts listed in the policy. This provides strong protection against STARTTLS downgrade and SMTP AitM attacks.</p>
+<p>Let&rsquo;s recap (for one final time, I promise!) what we have seen so far:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Component</th>
+          <th>Purpose</th>
+          <th>Secure</th>
+          <th>Acceptable</th>
+          <th>Red Flag</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>SPF</strong></td>
+          <td>Verifies authorised sending mail servers</td>
+          <td><code>-all</code></td>
+          <td><code>~all</code></td>
+          <td><code>+all</code></td>
+      </tr>
+      <tr>
+          <td><strong>DKIM</strong></td>
+          <td>Verifies authenticity and integrity</td>
+          <td><code>dkim=pass</code></td>
+          <td><code>dkim=pass</code></td>
+          <td>Missing/Failing</td>
+      </tr>
+      <tr>
+          <td><strong>DMARC</strong></td>
+          <td>Defines what to do when authentication fails</td>
+          <td><code>reject</code></td>
+          <td><code>quarantine</code></td>
+          <td><code>none</code></td>
+      </tr>
+      <tr>
+          <td><strong>MTA-STS</strong></td>
+          <td>Enforces TLS to protect emails in transit</td>
+          <td><code>enforce</code></td>
+          <td><code>testing</code></td>
+          <td><code>none</code></td>
+      </tr>
+  </tbody>
+</table>
+<p>Congratulations, you now know about all the components of modern email security!</p>
+<h1 id="email-spoofing">Email Spoofing<a hidden class="anchor" aria-hidden="true" href="#email-spoofing">#</a></h1>
+<p>So far, we have discussed the controls used to protect domains against email impersonation. But we haven&rsquo;t (clearly) answer the original question: <em>Why a spoofed email gets accepted in the first place?</em></p>
+<p>Consider an attacker attempting to send the following email:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>From: tyler.ceo@kairos-sec.com
+</span></span><span style="display:flex;"><span>To: victim@company.com
+</span></span><span style="display:flex;"><span>Subject: Urgent payment request
+</span></span></code></pre></div><p>Although the email appears to originate from <code>kairos-sec.com</code>, it is sent from infrastructure that is neither authorised by the domain nor under its control.</p>
+<p>Whether this email is accepted, quarantined, or rejected depends on the domain&rsquo;s SPF, DKIM, and DMARC settings:</p>
+<table>
+  <thead>
+      <tr>
+          <th></th>
+          <th>No Email Authentication</th>
+          <th>SPF &amp; DKIM Only</th>
+          <th>Full Protection</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SPF</td>
+          <td><code>+all</code></td>
+          <td><code>~all</code> or <code>-all</code></td>
+          <td><code>-all</code></td>
+      </tr>
+      <tr>
+          <td>DKIM</td>
+          <td>-</td>
+          <td><code>dkim=pass</code></td>
+          <td><code>dkim=pass</code></td>
+      </tr>
+      <tr>
+          <td>DMARC</td>
+          <td><code>none</code></td>
+          <td><code>none</code></td>
+          <td><code>reject</code></td>
+      </tr>
+      <tr>
+          <td><strong>Result</strong></td>
+          <td>May be delivered</td>
+          <td>May be delivered or flagged</td>
+          <td>Rejected</td>
+      </tr>
+  </tbody>
+</table>
+<p>The crucial point is that <strong>SPF and DKIM alone are not enough</strong>. They allow receiving mail servers to detect authentication failures, but only DMARC determines how those failures should be handled.</p>
+<p>While the likelihood of successful spoofing can often be inferred from SPF, DKIM, and DMARC configuration, ideally, <strong>we need to test how receiving mail systems behave in reality</strong>.</p>
+<p>Controlled spoofing attempts can be performed using tools such as <a href="https://ubuntu.com/server/docs/how-to/mail-services/install-postfix/"><code>postfix</code></a> and <a href="https://www.kali.org/tools/swaks/"><code>swaks</code></a>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Start local SMTP server</span>
+</span></span><span style="display:flex;"><span>sudo systemctl start postfix
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Send spoofed email</span>
+</span></span><span style="display:flex;"><span>swaks <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  --to victim@company.com <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  --from tyler.ceo@kairos-sec.com <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  --server localhost <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  --header <span style="color:#e6db74">&#34;Subject: Spoof Test&#34;</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span>  --body <span style="color:#e6db74">&#34;This is a controlled assessment.&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Stop SMTP server</span>
+</span></span><span style="display:flex;"><span>sudo systemctl stop postfix
+</span></span></code></pre></div><p>The objective is not to deliver a malicious payload, but rather to determine whether recipient mail systems correctly enforce the protections identified during the assessment.</p>
+<h1 id="automated-testing-email-audit">Automated Testing: Email-Audit<a hidden class="anchor" aria-hidden="true" href="#automated-testing-email-audit">#</a></h1>
+<h1 id="conclusion">Conclusion<a hidden class="anchor" aria-hidden="true" href="#conclusion">#</a></h1>
+<p>Email security is often overlooked during offensive security training, despite being a common (and interesting if you ask me!) component of both pentesting and real-world threats.</p>
+<p>Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS work together to protect against email spoofing, message tampering, and insecure mail delivery and why the final result ultimately depends on their combined power.</p>
+<p>Instead of a &ldquo;typical&rdquo; mitigation section, here is a final (<em>yes, I lied!</em>) recap:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Control</th>
+          <th>Recommendation</th>
+          <th>Usage</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>SPF</td>
+          <td><code>-all</code></td>
+          <td>Verifies authorised sending infrastructure</td>
+      </tr>
+      <tr>
+          <td>DKIM</td>
+          <td><code>dkim=pass</code></td>
+          <td>Verifies authenticity and integrity</td>
+      </tr>
+      <tr>
+          <td>DMARC</td>
+          <td><code>p=reject</code></td>
+          <td>Defines how authentication failures should be handled</td>
+      </tr>
+      <tr>
+          <td>MTA-STS</td>
+          <td><code>mode: enforce</code></td>
+          <td>Protects email in transit</td>
+      </tr>
+  </tbody>
+</table>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://localhost:1313/tags/email/">Email</a></li>
+      <li><a href="http://localhost:1313/tags/spf/">Spf</a></li>
+      <li><a href="http://localhost:1313/tags/dkim/">Dkim</a></li>
+      <li><a href="http://localhost:1313/tags/dmarc/">Dmarc</a></li>
+      <li><a href="http://localhost:1313/tags/mta-sts/">Mta-Sts</a></li>
+      <li><a href="http://localhost:1313/tags/spoofing/">Spoofing</a></li>
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">mollysec</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

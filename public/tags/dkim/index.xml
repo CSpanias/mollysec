@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Dkim on mollysec</title>
+    <link>http://localhost:1313/tags/dkim/</link>
+    <description>Recent content in Dkim on mollysec</description>
+    <generator>Hugo</generator>
+    <language>en-gb</language>
+    <lastBuildDate>Thu, 02 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/dkim/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Email Security: SPF, DKIM, and DMARC Explained</title>
+      <link>http://localhost:1313/posts/assessing-email-security/</link>
+      <pubDate>Thu, 02 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/assessing-email-security/</guid>
+      <description>A dive into modern email authentications and their role in preventing spoofing</description>
+    </item>
+  </channel>
+</rss>

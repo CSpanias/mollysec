@@ -1,54 +1,40 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Hashcat on MollySec</title>
+    <title>Hashcat on mollysec</title>
     <link>http://localhost:1313/tags/hashcat/</link>
-    <description>Recent content in Hashcat on MollySec</description>
-    <generator>Hugo -- gohugo.io</generator>
+    <description>Recent content in Hashcat on mollysec</description>
+    <generator>Hugo</generator>
     <language>en-gb</language>
-    <managingEditor>spaniascharalampos@gmail.com.com (MollySec)</managingEditor>
-    <webMaster>spaniascharalampos@gmail.com.com (MollySec)</webMaster>
-    <lastBuildDate>Sun, 15 Mar 2026 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/hashcat/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/hashcat/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Password Audits Part 3: Hash Analysis</title>
-      <link>http://localhost:1313/posts/password-audits-part-3/</link>
-      <pubDate>Sun, 15 Mar 2026 00:00:00 +0000</pubDate>
-      <author>spaniascharalampos@gmail.com.com (MollySec)</author>
-      <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
-      <description>
-        
-          
-            &lt;h1 id=&#34;introduction&#34;&gt;Introduction&lt;/h1&gt;
-&lt;h1 id=&#34;cracked-hashes-analysis&#34;&gt;Cracked Hashes Analysis&lt;/h1&gt;
-&lt;ul&gt;
-&lt;li&gt;Statistical analysis tools&lt;/li&gt;
-&lt;li&gt;a custom version of &lt;code&gt;pwdlyzer&lt;/code&gt; (6 years old)&lt;/li&gt;
-&lt;li&gt;a bit finicky, but outputs what we need for the custom reporting platform&lt;/li&gt;
-&lt;li&gt;that is XLM files mapped to the platforms findings and stock text for each section of the finding&lt;/li&gt;
-&lt;li&gt;Is there any other modern tool we can use for that?&lt;/li&gt;
-&lt;li&gt;I currently used &lt;code&gt;-D 2 -O&lt;/code&gt; to use both GPUs and optimised kernels. Is this the best optimisation?&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h1 id=&#34;reporting&#34;&gt;Reporting&lt;/h1&gt;
-&lt;ul&gt;
-&lt;li&gt;We report common stats, such as DA passwords, pass reuse, common words, etc.&lt;/li&gt;
-&lt;li&gt;Add % cracked per hashcat run to demonstrate pass strength?&lt;/li&gt;
-&lt;li&gt;Benchmarks against standards?
-&lt;ul&gt;
-&lt;li&gt;Verizon&amp;rsquo;s Data Breach Investigations Report&lt;/li&gt;
-&lt;li&gt;SocinumSecure&amp;rsquo;s credential review reports&lt;/li&gt;
-&lt;li&gt;Meta-analyses&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;can KnowBe4&amp;rsquo;s WPT tool be of any use?&lt;/li&gt;
-&lt;li&gt;is worth “comparing” to popular frameworks such as NIST, NCSC, etc?&lt;/li&gt;
-&lt;li&gt;Report generation and findings presentation&lt;/li&gt;
-&lt;li&gt;Recommendations and remediation guidance&lt;/li&gt;
-&lt;/ul&gt;
-          
-          
-        
-      </description>
+      <title>Password Audits Part 4: Analysing Results</title>
+      <link>http://localhost:1313/posts/password-audits-part-4-asdf/</link>
+      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-4-asdf/</guid>
+      <description>Generating meaningful statistics.</description>
     </item>
-    
+    <item>
+      <title>Password Audits Part 3: Cracking Hashes</title>
+      <link>http://localhost:1313/posts/password-audits-part-3/</link>
+      <pubDate>Sun, 31 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
+      <description>Cracking NTLM hashes in the real world.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 2: Hash Organisation</title>
+      <link>http://localhost:1313/posts/password-audits-part-2/</link>
+      <pubDate>Sun, 17 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-2/</guid>
+      <description>Fine-tuning secretsdump output.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 1: NTDS Extraction</title>
+      <link>http://localhost:1313/posts/password-audits-part-1/</link>
+      <pubDate>Fri, 13 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-1/</guid>
+      <description>NTDS extraction in practice: DCSync vs VSS</description>
+    </item>
   </channel>
 </rss>

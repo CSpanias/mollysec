@@ -4,11 +4,8 @@ date: 2026-05-31
 author: "mollysec"
 description: "Cracking NTLM hashes in the real world."
 featured: true
-tags: [
-]
-categories: [
-
-]
+tags: ["ntds", "hashcat", "passwords", "dcsync", "drsuapi", "ntlm", "lm", "hashes"]
+categories: []
 series: "Password Audits"
 thumbnail: ""
 draft: false

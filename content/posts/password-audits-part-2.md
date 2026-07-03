@@ -4,7 +4,7 @@ date: 2026-05-17
 author: "mollysec"
 description: "Fine-tuning secretsdump output."
 featured: true
-tags: []
+tags: ["ntds", "hashcat", "passwords", "dcsync", "drsuapi", "ntlm", "lm", "hashes"]
 categories: []
 series: "Password Audits"
 draft: false

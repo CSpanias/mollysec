@@ -4,11 +4,8 @@ date: 2026-06-26
 author: "mollysec"
 description: "Generating meaningful statistics."
 featured: true
-tags: [
-]
-categories: [
-
-]
+tags: ["ntds", "hashcat", "passwords", "dcsync", "drsuapi", "ntlm", "lm", "hashes"]
+categories: []
 series: "Password Audits"
 thumbnail: ""
 draft: true
