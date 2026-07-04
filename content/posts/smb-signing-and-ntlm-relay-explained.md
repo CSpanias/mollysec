@@ -14,7 +14,7 @@ draft: false
 
 In the first article, we talked about [LLMNR/NBT-NS Poisoning](https://mollysec.com/posts/llmr-nbt-ns-poisoning-explained/) and saw how it can be used to capture an NTLMv2 hash. This naturally leads to the next question: what can we do with that hash? Things are straightforward when the captured hash is weak and can be recovered, but what happens when it is not? What options do we have then?
 
-Instead of diving straight into NTLM relay, this article focuses on laying the necessary foundations first. We will focus on identifying where an NTLM relay attack is actually possible and, more importantly, why that is the case. For now, we will exclusively talk about relaying over SMB, which requires understanding SMB signing. LDAP signing will be the topic of the next article. 
+Instead of diving straight into NTLM relay, this article focuses on laying the necessary foundations first. We will focus on identifying where an NTLM relay attack is actually possible and, more importantly, why that is the case. For now, we will exclusively talk about relaying over SMB, which requires understanding SMB signing. LDAP signing will be the topic of the [next article](https://mollysec.com/posts/ldap-singing-and-channel-binding-explained/). 
 
 While NTLM relay can be performed over many other services beyond SMB and LDAP, we will leave that discussion for a future article that explores NTLM relay in detail. In the meantime, if you are curious about relaying across other protocols, you can read a bit more [here](https://x7331.gitbook.io/boxes/tl-dr/active-directory/attacks/ntlm-relay).
 

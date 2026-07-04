@@ -9,10 +9,10 @@
     <lastBuildDate>Wed, 01 Jul 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/tags/llmnr-poisoning/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>LDAP Signing and Channel Binding</title>
-      <link>http://localhost:1313/posts/ldap-singing-and-channel-binding/</link>
+      <title>LDAP Signing and Channel Binding Explained</title>
+      <link>http://localhost:1313/posts/ldap-singing-and-channel-binding-explained/</link>
       <pubDate>Wed, 01 Jul 2026 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/ldap-singing-and-channel-binding/</guid>
+      <guid>http://localhost:1313/posts/ldap-singing-and-channel-binding-explained/</guid>
       <description>How LDAP signing and channel binding work, why they exist, and their role in preventing NTLM relay attacks.</description>
     </item>
     <item>

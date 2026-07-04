@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Email Security Explained: SPF, DKIM, DMARC, and MTA-STS | mollysec</title>
 <meta name="keywords" content="email, spf, dkim, dmarc, mta-sts, spoofing">
-<meta name="description" content="A dive into modern email authentications and their role in preventing spoofing">
+<meta name="description" content="A dive into modern email authentications and their role in preventing spoofing.">
 <meta name="author" content="mollysec">
 <link rel="canonical" href="http://localhost:1313/posts/email-security-explained/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
@@ -122,7 +122,7 @@
       Email Security Explained: SPF, DKIM, DMARC, and MTA-STS
     </h1>
     <div class="post-description">
-      A dive into modern email authentications and their role in preventing spoofing
+      A dive into modern email authentications and their role in preventing spoofing.
     </div>
     <div class="post-meta">
 
@@ -245,6 +245,7 @@
       </tr>
   </tbody>
 </table>
+<p>In practice, many organisations choose to use <code>~all</code> and never transition to <code>-all</code>. This is done to reduce the risk of blocking legitimate emails originating from forgotten third-party services (e.g. marketing, recruitment, or ticketing platforms) that have not yet been included in the SPF record.</p>
 <p>Now that we understand what the SPF record does, let&rsquo;s see how a receiving mail server uses this information when processing incoming messages. We will use the domain of our favourite pentesting company, <a href="https://kairos-sec.com/"><code>kairos-sec.com</code></a>, to see how this works in practice.</p>
 <p>Let&rsquo;s start by having a look at its TXT record:</p>
 <figure>
@@ -552,6 +553,7 @@
   </tbody>
 </table>
 <p>A domain configured with <code>mode: enforce</code> instructs compatible sending mail servers to deliver email only over validated TLS connections and only to the hosts listed in the policy. This provides strong protection against STARTTLS downgrade and SMTP AitM attacks.</p>
+<p>In practice, MTA-STS is less commonly found that SPF, DKIM, or DMARC due to the additional operational overhead (DNS configuration and an HTTPS-hosted policy). As a result, many companies simply rely on the opportunistic TLS provided by their email platform and do not deploy MTA-STS at all.</p>
 <p>Let&rsquo;s recap (for one final time, I promise!) what we have seen so far:</p>
 <table>
   <thead>

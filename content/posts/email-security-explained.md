@@ -80,6 +80,8 @@ From a security perspective, we are primarily interested in the `all` component,
 | `~all` | Mark unauthorised senders as suspicious (`SoftFail`) | Common when sending sources are not yet fully known |
 | `+all` | Allow all senders (`Pass`) | Testing, backwards compatibility, or (more commonly) misconfiguration |
 
+In practice, many organisations choose to use `~all` and never transition to `-all`. This is done to reduce the risk of blocking legitimate emails originating from forgotten third-party services (e.g. marketing, recruitment, or ticketing platforms) that have not yet been included in the SPF record.
+
 Now that we understand what the SPF record does, let's see how a receiving mail server uses this information when processing incoming messages. We will use the domain of our favourite pentesting company, [`kairos-sec.com`](https://kairos-sec.com/), to see how this works in practice.
 
 Let's start by having a look at its TXT record:
@@ -300,6 +302,8 @@ The crucial field here is the **mode**, which determines how strictly the policy
 | `enforce` | Require TLS and trusted `MX` hosts for delivery   | Production deployment     |
 
 A domain configured with `mode: enforce` instructs compatible sending mail servers to deliver email only over validated TLS connections and only to the hosts listed in the policy. This provides strong protection against STARTTLS downgrade and SMTP AitM attacks.
+
+In practice, MTA-STS is less commonly found that SPF, DKIM, or DMARC due to the additional operational overhead (DNS configuration and an HTTPS-hosted policy). As a result, many companies simply rely on the opportunistic TLS provided by their email platform and do not deploy MTA-STS at all.
 
 Let's recap (for one final time, I promise!) what we have seen so far:
 
