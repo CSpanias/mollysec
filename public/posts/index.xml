@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Posts on mollysec</title>
+    <link>http://localhost:1313/posts/</link>
+    <description>Recent content in Posts on mollysec</description>
+    <generator>Hugo</generator>
+    <language>en-gb</language>
+    <lastBuildDate>Fri, 03 Jul 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Email Security Explained: SPF, DKIM, DMARC, and MTA-STS</title>
+      <link>http://localhost:1313/posts/email-security-explained/</link>
+      <pubDate>Fri, 03 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/email-security-explained/</guid>
+      <description>A dive into modern email authentication and their role in preventing spoofing.</description>
+    </item>
+    <item>
+      <title>LDAP Signing and Channel Binding Explained</title>
+      <link>http://localhost:1313/posts/ldap-singing-and-channel-binding-explained/</link>
+      <pubDate>Wed, 01 Jul 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/ldap-singing-and-channel-binding-explained/</guid>
+      <description>How LDAP signing and channel binding work, why they exist, and their role in preventing NTLM relay attacks.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 4: Analysing Results</title>
+      <link>http://localhost:1313/posts/password-audits-part-4-asdf/</link>
+      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-4-asdf/</guid>
+      <description>Generating meaningful statistics.</description>
+    </item>
+    <item>
+      <title>SMB Signing and NTLM Relay Explained</title>
+      <link>http://localhost:1313/posts/smb-signing-and-ntlm-relay-explained/</link>
+      <pubDate>Wed, 24 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/smb-signing-and-ntlm-relay-explained/</guid>
+      <description>How SMB signing works, why it exists, and its role in preventing NTLM relay attacks.</description>
+    </item>
+    <item>
+      <title>LLMNR/NBT-NS Poisoning Explained</title>
+      <link>http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/</link>
+      <pubDate>Sat, 20 Jun 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/llmr-nbt-ns-poisoning-explained/</guid>
+      <description>How legacy name resolution protocols work and why they still persist more than 40 years later.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 3: Cracking Hashes</title>
+      <link>http://localhost:1313/posts/password-audits-part-3/</link>
+      <pubDate>Sun, 31 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-3/</guid>
+      <description>Cracking NTLM hashes in the real world.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 2: Hash Organisation</title>
+      <link>http://localhost:1313/posts/password-audits-part-2/</link>
+      <pubDate>Sun, 17 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-2/</guid>
+      <description>Fine-tuning secretsdump output.</description>
+    </item>
+    <item>
+      <title>My Take on CAPE</title>
+      <link>http://localhost:1313/posts/cape-review/</link>
+      <pubDate>Tue, 12 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/cape-review/</guid>
+      <description>My experience taking Hack the Box&amp;#39;s Certified Active Directory Pentesting Expert Exam.</description>
+    </item>
+    <item>
+      <title>Password Audits Part 1: NTDS Extraction</title>
+      <link>http://localhost:1313/posts/password-audits-part-1/</link>
+      <pubDate>Fri, 13 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/password-audits-part-1/</guid>
+      <description>NTDS extraction in practice: DCSync vs VSS</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>My Take on CAPE | mollysec</title>
+<meta name="keywords" content="hack the box, htb, certified active directory pentesting expert, cape">
+<meta name="description" content="My experience taking Hack the Box&#39;s Certified Active Directory Pentesting Expert Exam.">
+<meta name="author" content="mollysec">
+<link rel="canonical" href="http://localhost:1313/posts/cape-review/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.9e36f40c4caadec5a8ed567cb4dbaa7a6c416fa26f34bf10c207c3d312786a79.css" integrity="sha256-njb0DEyq3sWo7VZ8tNuqemxBb6JvNL8QwgfD0xJ4ank=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/cape-review/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="mollysec (Alt + H)">mollysec</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/about" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      My Take on CAPE
+    </h1>
+    <div class="post-description">
+      My experience taking Hack the Box&#39;s Certified Active Directory Pentesting Expert Exam.
+    </div>
+    <div class="post-meta">
+
+<span title='2026-05-12 00:00:00 +0000 UTC'>May 12, 2026</span>&nbsp;·&nbsp;<span>mollysec</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><h1 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h1>
+<p>Although there are a few CAPE-related articles and videos out there, some can make the exam look scarier and more complicated than it actually is; they certainly had that effect for me!</p>
+<p>For instance, my biggest concern after reading them was evasion, as this is one of my weakest areas. In addition to that, I am working from a laptop with fairly limited resources, and let&rsquo;s just say that installing Visual Studio and compiling stuff on it is not ideal.</p>
+<p>So reading that I need to have a ready-to-compile environment or write custom payloads to pass the exam was a bit worrying.</p>
+<p>With that in mind, I will start by briefly addressing a few general aspects of the exam that are good to have sorted out before diving into the actual lab &ldquo;details&rdquo;.</p>
+<h2 id="reporting">Reporting<a hidden class="anchor" aria-hidden="true" href="#reporting">#</a></h2>
+<p>As far as reporting goes, I used <a href="https://docs.sysreptor.com/setup/installation/">SysReport</a> along with the <a href="https://github.com/Syslifters/HackTheBox-Reporting">CAPE template</a> and my report ended up to be ~100 pages. While this might sound like a lot, it is really not.</p>
+<p>If you are writing reports in your day-to-day job, the process should be relatively straightforward; if you don&rsquo;t, it might take you some more time.</p>
+<p>If you have never used SysReport before, maybe it is worth familiarising yourself with it beforehand to avoid any surprises when it&rsquo;s time to use it.</p>
+<h2 id="double-pivoting">Double Pivoting<a hidden class="anchor" aria-hidden="true" href="#double-pivoting">#</a></h2>
+<p>Another thing that is good to be confident with is double pivoting. It might seem complicated at first, but even if you never had to do it before, <a href="https://github.com/nicocha30/ligolo-ng"><code>ligolo-ng</code></a> makes this process trivial. Just watch r1ckyr3c0n&rsquo;s <a href="https://www.youtube.com/watch?v=de7IP_uZK6E">video</a>, practice it yourself a few times, and you will be golden.</p>
+<p>One thing that might be worth highlighting here is that the SSH host has some outdated tools under <code>/opt</code>, including <code>ligolo-ng</code>. I had prepared my own toolset to use, including the latest version of <code>ligolo-ng</code>, but when I did, the tunnel kept dropping every few minutes. After wasting half a day, I switched to the outdated version of the SSH host, and the tunnel never dropped once.</p>
+<p>I haven&rsquo;t seen anyone else talking about this, so it might be that the environment had some issues unrelated to <code>ligolo-ng</code> that just happened to resolved when I switched to the outdated version. I will never know!</p>
+<h2 id="evasion">Evasion<a hidden class="anchor" aria-hidden="true" href="#evasion">#</a></h2>
+<p>As I already mentioned, some CAPE-related articles can give the impression that evasion is a big part of the exam. I have to admit, I am all about AD, but not at all about red teaming; at least not for now.</p>
+<p>Based on the course content (only 1/15 modules touched on evasion), I found the idea of evasion being an important part of an AD-pentesting-focused exam bizarre.</p>
+<p>I am not saying there is anything wrong with having a VM compiling custom exploits and bypassing Defender like it is not even there. What I am saying is that I was not in the mood for that, and that my goal was to do the bare minimum on that front.</p>
+<p>My idea of evasion before sitting for CAPE was the following:</p>
+<ul>
+<li>If an out-of-box binary was blocked by Defender (e.g. <code>winPEASany.exe</code>), I would just use its obfuscated version (e.g. <code>winPEASany_ofs.exe</code>).</li>
+<li>If I needed a reverse shell and none of my go-to <a href="https://www.revshells.com/">revshells.com</a> payloads work, I would opt for an obfsucated Sliver beacon (ugh!).</li>
+</ul>
+<p>It was not always straightforward, but it was not so hard either. Believe me when I say, since I managed to work through the evasion part, you certainly can too!</p>
+<h2 id="context">Context<a hidden class="anchor" aria-hidden="true" href="#context">#</a></h2>
+<p>For context, prior to CAPE, I had close to zero professional AD-related experience and somewhat average lab experience. More specifically:</p>
+<ul>
+<li>I have done my fair share of Windows/AD-related boxes as well as a few <a href="https://www.hackthebox.com/hacker/pro-labs#prolabs-scroll">prolabs</a> (P.O.O., Dante, and Zephyr). All that about a year ago.</li>
+<li>I have studied the <a href="https://academy.hackthebox.com/preview/certifications/htb-certified-penetration-testing-specialist">CPTS</a> path (~2 years ago) and have also taken some relevant to CAPE certs, such as <a href="https://www.alteredsecurity.com/post/certified-red-team-professional-crtp">CRTP</a> and <a href="https://www.offsec.com/courses/pen-200/">OSCP</a>.</li>
+<li>Although I have been working as a pentester for ~2.5 years, the first two were almost exclusively on web apps/APIs. I actually did my first internal just a few months ago (yay!).</li>
+</ul>
+<p>With all that out of the way, here&rsquo;s how the exam looked from my perspective.</p>
+<h1 id="what-to-expect">What to Expect<a hidden class="anchor" aria-hidden="true" href="#what-to-expect">#</a></h1>
+<h2 id="setup">Setup<a hidden class="anchor" aria-hidden="true" href="#setup">#</a></h2>
+<p>To begin with, for some reason, I was certain that CAPE was an assumed breach scenario, i.e., that you start with a valid domain account and go from there. That&rsquo;s not the case.</p>
+<p>You are given creds for a non-domain user that can SSH into a host that can communicate the target network. The initial setup looks like this:</p>
+<figure>
+    <img loading="lazy" src="/images/cape-setup.png"
+         alt="The initial setup when starting the CAPE exam." width="auto"/> 
+</figure>
+
+<p>Then it&rsquo;s up to you how you go from there.</p>
+<h2 id="enumeration">Enumeration<a hidden class="anchor" aria-hidden="true" href="#enumeration">#</a></h2>
+<p>As others have already said (see <a href="https://lorenzomeacci.com/htb-cape-review#tips-for-the-exam">here</a> and <a href="https://thepastamentor.github.io/cape-prep-guide.html#essential-tooling">here</a>), enumeration is the name of the game.</p>
+<p>What I found most interesting about the lab, is that although almost every attack vector is taught during the course (yes, CAPE should be &ldquo;enough&rdquo; to pass the exam), the attack itself is never straightforward. The environment is designed in such a way that tries its best to really test your understanding of each attack.</p>
+<p>If you expect to gather domain data and let BloodHound lay out the attack path for you, you will be disappointed. The lab requires to level up your enumeration and be able to sniff out an attack vector by seeing scattered pieces here and there. It looks something like this:</p>
+<ol>
+<li>Enumerate and collect data</li>
+<li>Form a hypothesis about a potential attack path</li>
+<li>Attempt to validate it</li>
+<li>If it works, move forward (or more like backward to Step 1!)</li>
+<li>If not, understand why it failed and adjust accordingly</li>
+</ol>
+<p>I found the last point to be particularly important. If something fails, treat it as feedback rather than a setback. Don&rsquo;t rush to switch techniques; you might be missing a prerequisite or you have made a wrong assumption for something that can be replaced with something else.</p>
+<p>On various occasions, I had an idea of what the attack vector might be, and I found myself asking:</p>
+<ul>
+<li>What condition must be true for this attack to work?</li>
+<li>What specific element(s) am I missing and how can I best enumerate for it?</li>
+</ul>
+<p>Answering these questions almost always led me to the next step.</p>
+<h1 id="practice">Practice<a hidden class="anchor" aria-hidden="true" href="#practice">#</a></h1>
+<p>After completing the path, I had about one month until the exam. My initial plan was to tackle the Cybernetics pro lab. Due to environment issues, I was spending more time troubleshooting and waiting for hosts to come back alive rather than practicing, so I had to let that idea go real quick. As an alternative, I started working on individual AD boxes instead.</p>
+<p>Below is a list of retired boxes that I believe to be a good practice to get you in the required mindset. I should note, that these boxes are not relevant in a sense that they have the same attack vectors with the actual exam, but rather that they force you to think in a similar way and practice core AD concepts.</p>
+<p>My approach when tackling boxes is to first let myself &ldquo;grind&rdquo; for a bit. If I am confident that I have tried everything I know and still can&rsquo;t get through it, then I opt for a walkthrough, either from <a href="https://0xdf.gitlab.io/">0xdf</a> or <a href="https://www.youtube.com/@ippsec">IppSec</a>. For context, I needed hints to solve most of these boxes and still did OK in CAPE, so treat them as a way to learn new things, don&rsquo;t try to reinvent the wheel.</p>
+<p>As you probably already know, CAPE lists CPTS as a prerequisite, so I take stuff like host/share (SMB, FTP, NFS) enumeration, password spray, brute force attacks (BFA), etc. as granted. The BFA tag on the table means that &ldquo;smart&rdquo; (i.e., simple and sensical) custom wordlists are used. I have also intentionally skipped some boxes due to their reliance on web stuff as it is out of scope for CAPE. Finally, on the Relevancy column, I just highlight what AD concepts each box helps you practice; obviously, each box includes a lot more that just those.</p>
+<p>The below boxes are good for &ldquo;warm up&rdquo;, i.e., you should feel pretty comfortable solving them without needing much help. If you feel that you are struggling, I would recommend spending some time to understand why.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Box</th>
+          <th>Rating</th>
+          <th>Relevancy</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/escapetwo">EscapeTwo</a></td>
+          <td>Easy</td>
+          <td>ACL-Based Enum, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/retro">Retro</a></td>
+          <td>Easy</td>
+          <td>BFA, Pre2k</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hacksmarter.org/courses/e7586073-d447-41db-8f8e-6bd22576556d">ShadowGate</a></td>
+          <td>Easy</td>
+          <td>AS-REP Roasting, ACL-based Enum, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="">MartiniAD</a></td>
+          <td>Easy</td>
+          <td>Kerberos, Kerberoasting, Password Spray</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Certified">Certified</a></td>
+          <td>Medium</td>
+          <td>ACL-Based Enum, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/delegate">Delegate</a></td>
+          <td>Medium</td>
+          <td>ACL-Based Enum, Unconstrained Delegation</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Escape">Escape</a></td>
+          <td>Medium</td>
+          <td>MSSQL, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Phantom">Phantom</a></td>
+          <td>Medium</td>
+          <td>Password Spray, RBCD</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Redelegate">Redelegate</a></td>
+          <td>Hard</td>
+          <td>BFA, ACL-Based Enum, Constrained Delegation</td>
+      </tr>
+  </tbody>
+</table>
+<p>The next list of boxes isn&rsquo;t too hard either, but they can be a challenge if your notes are missing a few things:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Box</th>
+          <th>Rating</th>
+          <th>Relevancy</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/baby">Baby</a></td>
+          <td>Easy</td>
+          <td>LDAP Enumeration</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/VOLEUR">Voleur</a></td>
+          <td>Medium</td>
+          <td>Kerberos, DPAPI, Deleted Objects</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Breach">Breach</a></td>
+          <td>Medium</td>
+          <td>SMB Uploads, MSSQL</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Sendai">Sendai</a></td>
+          <td>Medium</td>
+          <td>ACL-Based Enum, Troubleshooting Auth Erros, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/babytwo">BabyTwo</a></td>
+          <td>Medium</td>
+          <td>Logon Scripts, ACL-Based Enum, GPO Abuse</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/tombwatcher">TombWatcher</a></td>
+          <td>Medium</td>
+          <td>ACL-Based Enum, Deleted Objects, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/VulnCicada">VulnCicada</a></td>
+          <td>Medium</td>
+          <td>Kerberos, ADCS</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/Signed">Signed</a></td>
+          <td>Medium</td>
+          <td>MSSQL, NTLM Reflection</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/DarkZero">DarkZero</a></td>
+          <td>Hard</td>
+          <td>MSSQL, Logon Types, Forest Trusts</td>
+      </tr>
+      <tr>
+          <td><a href="https://www.hackthebox.com/machines/RustyKey">RustyKey</a></td>
+          <td>Hard</td>
+          <td>Kerberos, Timeroasting, RBCD</td>
+      </tr>
+  </tbody>
+</table>
+<p>What I would highly recommend is that even if BloodHound lays down a path for you (e.g. <code>poppy</code> has <code>WriteOwner</code> over <code>henry</code>), try to then take a step back and go about enumerating that &ldquo;manually&rdquo; as if you did not have BloodHound available (e.g. using <code>dacledit.py</code> or any other similar tool). Ask yourself:</p>
+<ul>
+<li>How would I go about checking what permissions each object might have on all other domain objects with just a userlist at hand?</li>
+<li>How do I enumerate the specific element that I am missing for what I think is the potential attack vector for moving forward?</li>
+</ul>
+<h1 id="final-thoughts">Final Thoughts<a hidden class="anchor" aria-hidden="true" href="#final-thoughts">#</a></h1>
+<p>The bottom line is that CAPE wants you to succeed and is not designed to trick you in any way. Although, I found some elements that I ended up not using at all, I can&rsquo;t say that the exam had any major rabbit hole.</p>
+<p>If you approach the exam as a collection of predefined attacks which can be executed by simply copying and pasting commands from the course as they are, it will probably feel overwhelming. If you approach it as a system that you need to gradually understand and map out, you will probably do well and have fun in the process!</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://localhost:1313/tags/hack-the-box/">Hack the Box</a></li>
+      <li><a href="http://localhost:1313/tags/htb/">Htb</a></li>
+      <li><a href="http://localhost:1313/tags/certified-active-directory-pentesting-expert/">Certified Active Directory Pentesting Expert</a></li>
+      <li><a href="http://localhost:1313/tags/cape/">Cape</a></li>
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">mollysec</a></span> · 
+
+    
+    
+    <span>
+        Powered by
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>
