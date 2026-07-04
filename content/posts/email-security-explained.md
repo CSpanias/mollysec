@@ -2,7 +2,7 @@
 title: "Email Security Explained: SPF, DKIM, DMARC, and MTA-STS"
 date: "2026-07-03"
 author: "mollysec"
-description: "A dive into modern email authentications and their role in preventing spoofing."
+description: "A dive into modern email authentication and their role in preventing spoofing."
 featured: true
 tags: ["email","spf","dkim","dmarc","mta-sts", "spoofing"]
 categories: ""
@@ -97,7 +97,7 @@ The above `TXT` record shows a list of mail servers that are authorised to send 
 
 > *Notice that evaluating a single SPF record often requires multiple DNS lookups. In our example, the `a`, `mx`, and `include` mechanisms all trigger additional queries. To prevent excessive DNS resolution, [SPF evaluation is limited to a maximum of 10 DNS lookups](https://mxtoolbox.com/dmarc/spf/spf-lookup-limit). Once exceeded, SPF evaluation results in a `PermError`.*
 
-So how is the SPF record is used in practice? Glad you asked! Let's go through an example:
+So how is the SPF record used in practice? Glad you asked! Let's go through an example:
 
 1. An email is sent claiming to originate from `tyler.ceo@kairos-sec.com`.
 2. The receiving mail server extracts the sender domain (`kairos-sec.com`) and queries its SPF record.
@@ -303,7 +303,7 @@ The crucial field here is the **mode**, which determines how strictly the policy
 
 A domain configured with `mode: enforce` instructs compatible sending mail servers to deliver email only over validated TLS connections and only to the hosts listed in the policy. This provides strong protection against STARTTLS downgrade and SMTP AitM attacks.
 
-In practice, MTA-STS is less commonly found that SPF, DKIM, or DMARC due to the additional operational overhead (DNS configuration and an HTTPS-hosted policy). As a result, many companies simply rely on the opportunistic TLS provided by their email platform and do not deploy MTA-STS at all.
+In practice, MTA-STS is less commonly found than SPF, DKIM, or DMARC due to the additional operational overhead (DNS configuration and an HTTPS-hosted policy). As a result, many companies simply rely on the opportunistic TLS provided by their email platform and do not deploy MTA-STS at all.
 
 Let's recap (for one final time, I promise!) what we have seen so far:
 
@@ -318,7 +318,7 @@ Congratulations, you now know about all the components of modern email security!
 
 # Email Spoofing
 
-So far, we have discussed the controls used to protect domains against email impersonation. But we haven't (clearly) answer the original question: *Why a spoofed email gets accepted in the first place?*
+So far, we have discussed the controls used to protect domains against email impersonation. But we haven't (clearly) answered the original question: *Why a spoofed email gets accepted in the first place?*
 
 Consider an attacker attempting to send the following email:
 
@@ -363,7 +363,7 @@ sudo systemctl stop postfix
 
 The objective is not to deliver a malicious payload, but rather to determine whether recipient mail systems correctly enforce the protections identified during the assessment.
 
-# Automating The Process with Email-Audit
+# Automating the Process with Email-Audit
 
 Assessing everything manually is great (and highly recommended!) for understanding how email authentication works, but it quickly becomes repetitive, especially when reviewing multiple domains during the same assessment.
 
@@ -398,13 +398,11 @@ And **controlled spoofing assessments** using a local SMTP relay:
     caption=""
 >}}
 
-This allows security controls to be evaluated from both a configuration and practical validation perspective.
+This allows email security controls to be evaluated from both a configuration and practical validation perspective.
 
 # Conclusion
 
-Email security is often overlooked during offensive security training, despite being a common (and interesting if you ask me!) component of both pentesting and real-world threats.
-
-Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS work together to protect against email spoofing, message tampering, and insecure mail delivery and why the final result depends on their combined power. 
+Email security is often overlooked during offensive security training, despite being a common (and interesting if you ask me!) component of both pentesting and real-world threats. Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS protect against email spoofing, message tampering, and insecure mail delivery, and why effective mail security depends on their combined use. 
 
 Instead of a "typical" mitigation section, here is a final (*yes, I lied!*) recap:
 
