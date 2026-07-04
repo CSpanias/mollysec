@@ -1,8 +1,7 @@
 ---
 title: "About Me"
 layout: "page"
-draft: true
-showPostMeta: false
+draft: false
 ---
 
 # Who Am I?
