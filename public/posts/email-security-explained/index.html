@@ -658,11 +658,32 @@
 </span></span><span style="display:flex;"><span><span style="color:#75715e"># Stop SMTP server</span>
 </span></span><span style="display:flex;"><span>sudo systemctl stop postfix
 </span></span></code></pre></div><p>The objective is not to deliver a malicious payload, but rather to determine whether recipient mail systems correctly enforce the protections identified during the assessment.</p>
-<h1 id="automated-testing-email-audit">Automated Testing: Email-Audit<a hidden class="anchor" aria-hidden="true" href="#automated-testing-email-audit">#</a></h1>
-<p>WIP!</p>
+<h1 id="automating-the-process-with-email-audit">Automating The Process with Email-Audit<a hidden class="anchor" aria-hidden="true" href="#automating-the-process-with-email-audit">#</a></h1>
+<p>Assessing everything manually is great (and highly recommended!) for understanding how email authentication works, but it quickly becomes repetitive, especially when reviewing multiple domains during the same assessment.</p>
+<p>To save myself some time, I developed (<em>vibe-coded with my pal Copilot</em>) <a href="https://github.com/CSpanias/email-audit"><code>email-audit</code></a>, a script that automates the same process we have followed throughout this article. Keep in mind that the goal was to develop a primarily <strong>educational tool that can be also used in practice</strong> and not the other way around.</p>
+<p>As such, I intentionally kept the output verbose. Instead of displaying just raw records, the tool breaks down each field, explains its purpose, and provides a brief assessment of its security implications.</p>
+<p>At the time of writing, it supports <strong>DNS-based analysis of SPF, DKIM, DMARC, and MTA-STS</strong>:</p>
+<figure>
+    <img loading="lazy" src="/images/email-audit-dns.png"
+         alt="Performing DNS-based analysis with email-audit." width="850"/> 
+</figure>
+
+<p><strong>Validation of authentication results</strong> from exported <code>.eml</code> files (remember the <code>dkim=pass</code> check!):</p>
+<figure>
+    <img loading="lazy" src="/images/email-audit-eml.png"
+         alt="Performing DNS-based analysis and validating authentication results via an EML file with email-audit." width="850"/> 
+</figure>
+
+<p>And <strong>controlled spoofing assessments</strong> using a local SMTP relay:</p>
+<figure>
+    <img loading="lazy" src="/images/email-audit-spoofing.png"
+         alt="Performing DNS-based analysis and validating authentication results via an EML file with email-audit." width="950"/> 
+</figure>
+
+<p>This allows security controls to be evaluated from both a configuration and practical validation perspective.</p>
 <h1 id="conclusion">Conclusion<a hidden class="anchor" aria-hidden="true" href="#conclusion">#</a></h1>
 <p>Email security is often overlooked during offensive security training, despite being a common (and interesting if you ask me!) component of both pentesting and real-world threats.</p>
-<p>Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS work together to protect against email spoofing, message tampering, and insecure mail delivery and why the final result ultimately depends on their combined power.</p>
+<p>Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS work together to protect against email spoofing, message tampering, and insecure mail delivery and why the final result depends on their combined power.</p>
 <p>Instead of a &ldquo;typical&rdquo; mitigation section, here is a final (<em>yes, I lied!</em>) recap:</p>
 <table>
   <thead>
@@ -675,7 +696,7 @@
   <tbody>
       <tr>
           <td>SPF</td>
-          <td><code>-all</code></td>
+          <td><code>-all</code> or <code>~all</code></td>
           <td>Verifies authorised sending infrastructure</td>
       </tr>
       <tr>
@@ -685,7 +706,7 @@
       </tr>
       <tr>
           <td>DMARC</td>
-          <td><code>p=reject</code></td>
+          <td><code>p=reject</code> or <code>p=quarantine</code></td>
           <td>Defines how authentication failures should be handled</td>
       </tr>
       <tr>

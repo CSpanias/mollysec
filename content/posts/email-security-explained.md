@@ -363,21 +363,54 @@ sudo systemctl stop postfix
 
 The objective is not to deliver a malicious payload, but rather to determine whether recipient mail systems correctly enforce the protections identified during the assessment.
 
-# Automated Testing: Email-Audit
+# Automating The Process with Email-Audit
 
-WIP!
+Assessing everything manually is great (and highly recommended!) for understanding how email authentication works, but it quickly becomes repetitive, especially when reviewing multiple domains during the same assessment.
+
+To save myself some time, I developed (*vibe-coded with my pal Copilot*) [`email-audit`](https://github.com/CSpanias/email-audit), a script that automates the same process we have followed throughout this article. Keep in mind that the goal was to develop a primarily **educational tool that can be also used in practice** and not the other way around.
+
+As such, I intentionally kept the output verbose. Instead of displaying just raw records, the tool breaks down each field, explains its purpose, and provides a brief assessment of its security implications.
+
+At the time of writing, it supports **DNS-based analysis of SPF, DKIM, DMARC, and MTA-STS**:
+
+{{<figure 
+    src="/images/email-audit-dns.png"
+    alt="Performing DNS-based analysis with email-audit."
+    width="850"
+    caption=""
+>}}
+
+**Validation of authentication results** from exported `.eml` files (remember the `dkim=pass` check!):
+
+{{<figure 
+    src="/images/email-audit-eml.png"
+    alt="Performing DNS-based analysis and validating authentication results via an EML file with email-audit."
+    width="850"
+    caption=""
+>}}
+
+And **controlled spoofing assessments** using a local SMTP relay:
+
+{{<figure 
+    src="/images/email-audit-spoofing.png"
+    alt="Performing DNS-based analysis and validating authentication results via an EML file with email-audit."
+    width="950"
+    caption=""
+>}}
+
+This allows security controls to be evaluated from both a configuration and practical validation perspective.
 
 # Conclusion
 
 Email security is often overlooked during offensive security training, despite being a common (and interesting if you ask me!) component of both pentesting and real-world threats.
 
-Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS work together to protect against email spoofing, message tampering, and insecure mail delivery and why the final result ultimately depends on their combined power. 
+Throughout this article, we have seen how SPF, DKIM, DMARC, and MTA-STS work together to protect against email spoofing, message tampering, and insecure mail delivery and why the final result depends on their combined power. 
 
 Instead of a "typical" mitigation section, here is a final (*yes, I lied!*) recap:
 
 | Control | Recommendation | Usage |
 | ------- | -------------------- | ----- |
-| SPF     | `-all`               | Verifies authorised sending infrastructure |
+| SPF     | `-all` or `~all`      | Verifies authorised sending infrastructure |
 | DKIM    | `dkim=pass`          | Verifies authenticity and integrity |
-| DMARC   | `p=reject`           | Defines how authentication failures should be handled |
+| DMARC   | `p=reject` or `p=quarantine` | Defines how authentication failures should be handled |
 | MTA-STS | `mode: enforce`      | Protects email in transit |
