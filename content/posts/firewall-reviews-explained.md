@@ -2,16 +2,15 @@
 title: "Firewall Reviews Explained"
 date: "2026-07-03"
 author: "mollysec"
-description: "?"
+description: "How to Review a Firewall Configuration."
 featured: true
-tags: ["firewall","security","review","rules"]
+tags: ["firewall","security","review","rules","cisco","asa","ftd"]
 categories: ""
 series: ""
 draft: true
 ---
 
 # Introduction
-
 
 {{<figure 
     src="/images/"
@@ -20,7 +19,7 @@ draft: true
     caption=""
 >}}
 
-Firewall reviews are a common component of infrastructure security assessments, yet many practitioners are unfamiliar with how they are performed in practice.
+Firewall (FW) reviews are a common component of infrastructure security assessments, yet many practitioners are unfamiliar with how they are performed in practice.
 
 This article explains:
 - The purpose of a firewall review
@@ -31,535 +30,136 @@ This article explains:
 
 # TL;DR on Firewalls
 
-## What Is a Firewall Review?
+What is a firewall?
+Stateful vs stateless inspection
+Zones and segmentation
+Why organizations use them
 
-Objectives + Scope
+Objectives + Scope -> We get a firewall configuration dump (or running configuration export) which can be huge (multiple files, 6k+ lines each)
 
-We get a firewall configuration dump (or running configuration export) which can be huge (multiple files, 6k+ lines each)
+# Firewall Review Process
 
-### Common Firewall Vendors
+> Talk about the logic behind each section -> what each answers
 
-- Palo Alto
-- Fortinet
-- Cisco ASA / Firepower
-- Check Point
-- Sophos
-- Juniper
+|Section|Question|
+|---|---|
+|Network Architecture|What am I protecting?|
+|Access Control|Who can talk to whom?|
+|VPN Security|Who can access the environment remotely?|
+|Administrator Authentication|Who can administer the firewall?|
+|Monitoring & Logging|How will I know if something goes wrong?|
+|Control Plane Protection|Can somebody attack the firewall itself?|
 
-## 1. Device & Management Plane
+## Network Architecture
 
-### Device Information
+Before reviewing FW rules, we first need to understand the network architecture and identify the trust boundaries between different parts of the environment. **A FW review is ultimately an assessment of how traffic is permitted to cross those trust boundaries**.
 
-* Platform (Cisco FTD, Palo Alto, FortiGate, etc.)
-* Software / firmware version
-* Hardware model
-* Known vulnerabilities
-* Support status
+Reviewing thousands of access control rules without first understanding the underlying architecture can lead to incorrect conclusions and missed findings. This section tries to answer a series of questions.
 
-- implement searchsploit (+nvd/cve) scan (--vulnerability-scan / -vs)
+Let's get right into it!
+ 
+### What Networks Exist?
 
-### Administrative Access
+The first objective of a firewall review is **identifying the networks that make up the environment** and the interfaces (IFs) that connect them. 
 
-* Local accounts
+These may include user networks, DMZs, public-facing services, etc. Understanding which networks exist provides the context required for the remainder of the review. Without this context, it is difficult to determine whether a FW rule allows legitimate communication or introduces unnecessary risk.
+
+
+One of the first tasks during a configuration review is therefore **building a high-level map of the environment** and **identifying the role of each network**.
+
+In Cisco ASA/FTD configurations, IFs are typically assigned a logical name using the `nameif` directive. Although the physical interface name identifies the actual interface (e.g. `Port-channel1.100`), the `nameif` usually provides a more useful description of the network connected to it:
+
+{{<figure 
+    src="/images/fw-audit-nameif-vs-if.png"
+    alt="Listing the logical names of all interfaces."
+    width="950"
+    caption=""
+>}}
+
+### Which Zones Represent Trust Boundaries?
+
+As environments grow, reviewing individual IFs becomes increasingly difficult. To simplify policy management, IFs are often grouped into **security zones**.
+
+A security zone represents a collection of networks with a similar trust level. Rather than applying policies to every individual IF, FWs can enforce controls between zones. For example:
+ 
+| Zone | Purpose |
+|--------|--------|
+| Public | Untrusted external networks |
+| DMZ | Public-facing services |
+| Corporate | Internal user networks |
+
+Identifying these zones helps us understand the organisation's trust model and **network segmentation strategy**. In the example below, multiple IFs have been grouped into the same security zone because they share a similar trust level:
+
+{{<figure 
+    src="/images/fw-audit-sec-zones.png"
+    alt="Listing the configuration's security zones."
+    width="950"
+    caption=""
+>}}
+
+Notice how the `CORPORATE_ZONE` contains the `CORP_USERS`, `CORP_SERVERS`, and `CORP_WIFI` IFs, while the `DMZ_ZONE` contains both `DMZ_WEB` and `DMZ_APP`.
+
+This allows us to reason about traffic flowing between trust levels rather than focusing on individual networks. For example, traffic flowing between the `INTERNET_ZONE` and the `CORPORATE_ZONE` crosses a significant trust boundary and will typically require stricter controls than traffic between networks within the same zone.
+
+### Which Networks are Exposed to the Internet?
+
+One of the first tasks during a firewall review is identifying which IFs are exposed to the internet. These IFs commonly host or terminate:
+ 
+* Public services
+* Remote access VPNs
+* Site-to-site VPNs
+* Published applications
+
+Because they are directly reachable by external users, they typically **represent the highest-risk attack surface** within the environment.
+
+In Cisco ASA/FTD configurations, internet-facing IFs can often be identified through a combination of their logical names (`nameif`), public IP addressing, and their role in VPN termination:
+
+{{<figure 
+    src="/images/fw-audit-internet-exposed-pubIps-nameif-vpnTermination.png"
+    alt="Enumerating publicly exposed interfaces."
+    width="950"
+    caption=""
+>}}
+
+### Which IFs are used for management?
+
+Management IFs are used by administrators to configure, monitor, and maintain the FW. Common management services include:
+ 
+* SSH
+* HTTPS
 * TACACS
 * RADIUS
-* MFA
-* RBAC
+* SAML-based administration
+ 
+These IFs should be carefully reviewed as unauthorised access could result in complete compromise of the FW itself.
+ 
+In addition to identifying dedicated management IFs, reviewers should also determine which networks are permitted to access them and whether management traffic is appropriately segregated from user and internet-facing networks.
+ 
+### Trust Boundaries
+ 
+The most important outcome of the Network Architecture review is identifying trust boundaries.
+ 
+A trust boundary exists whenever traffic moves between networks with different security requirements or levels of trust.
+ 
+Examples include:
+ 
+* Internet → Corporate
+* Internet → DMZ
+* Corporate → Management
+* Partner → Corporate
+ 
+These boundaries determine where firewall controls are expected to enforce security policies.
+ 
+Once the architecture and trust boundaries have been identified, we can begin reviewing how traffic is actually permitted to flow between them.
+ 
+This brings us to the most important part of the firewall review: **Access Control**.
+
+## Access Control
+## VPN Security
+## Administrator Authentication
+## Monitoring & Logging
+## Control Plane Protection
+## Automating the Review with Firewall-Audit
 
-### Management Services
 
-* SSH
-* HTTPS management
-* SNMP
-* API access
-* Restriction of management interfaces
-
-**Why we care**
-
-Compromising the firewall itself bypasses all network segmentation and policy controls.
-
-## 2. Network Architecture
-
-### Interfaces
-
-* Every connection point is an interface.
-* Example:
-
-```text
-Internet
-    ↓
-Firewall
-    ↓
-Corp
-```
-
-### Security Zones
-
-Logical groupings of interfaces:
-
-```text
-Internet
-Corp
-DMZ
-Management
-VPN
-```
-
-### Segmentation
-
-The firewall's primary job:
-
-```text
-Control traffic between zones
-```
-
-Example:
-
-```text
-Internet
-    ↓
-DMZ
-    ↓
-Corp
-```
-
-**Why we care**
-
-Poor segmentation often allows attackers to move from less trusted networks into more trusted networks.
-
-## 3. Access Control
-
-### Firewall Policies
-
-The business logic.
-
-Example:
-
-```text
-Users may browse the web
-Mail server may send SMTP
-VPN users may access file shares
-```
-
-### ACLs / Rulebase
-
-The actual firewall rules.
-
-```text
-Who can talk to whom
-Using which protocol
-Using which port
-```
-
-### Objects & Object Groups
-
-Objects are labels:
-
-```text
-SL1BTPMADCV01
-```
-
-instead of:
-
-```text
-172.16.50.11
-```
-
-Object groups are collections:
-
-```text
-Domain Controllers
-```
-
-instead of:
-
-```text
-DC1
-DC2
-DC3
-```
-
-**Why we care**
-
-Most review findings originate from misconfigured firewall rules.
-
-## 4. Remote Connectivity
-
-### Remote Access VPN
-
-User-to-network access.
-
-VPN pools:
-
-```text
-ANYCONNECT_POOL_SL1
-```
-
-operate similarly to DHCP scopes and assign addresses to remote users.
-
-Questions:
-
-* Can VPN users reach sensitive systems?
-* Is MFA enforced?
-* Is split tunnelling enabled?
-
-### Site-to-Site VPN
-
-Network-to-network connectivity.
-
-Examples:
-
-```text
-Azure
-Partner Networks
-Other Offices
-```
-
-Tunnel interfaces connect networks rather than users.
-
-**Why we care**
-
-VPNs frequently create trusted paths into critical environments.
-
-## 5. Network Services
-
-### NAT
-
-Address translation.
-
-Questions:
-
-* What is exposed externally?
-* What is internally reachable?
-* Are public services correctly mapped?
-
-### Routing
-
-* Static routes
-* Dynamic routing (BGP, OSPF, etc.)
-* Cloud connectivity
-
-### DNS
-
-* Internal resolvers
-* External resolvers
-* Name resolution dependencies
-
-**Why we care**
-
-Routing and NAT often reveal hidden trust relationships and externally exposed systems.
-
-## 6. Monitoring & Security Controls
-
-### Logging
-
-* Syslog
-* Event logging
-* Rule logging
-
-### Monitoring
-
-* SNMP
-* SIEM integration
-* NOC monitoring
-
-### Threat Detection
-
-* IPS
-* IDS
-* Threat detection features
-* Alerting
-
-**Why we care**
-
-A secure firewall that nobody monitors is still a risk.
-
-# Review Methodology
-
-## 1. Understand the Architecture
-
-Identify:
-
-* Interfaces
-* Zones
-* VPNs
-* Routing
-
-Map traffic flows.
-
-## 2. Review Management Security
-
-Assess:
-
-* Admin authentication
-* MFA
-* TACACS/RADIUS
-* Management exposure
-
-## 3. Review Segmentation
-
-Assess:
-
-* Zone boundaries
-* Trust relationships
-* Management access
-
-## 4. Review Firewall Rules
-
-Assess:
-
-* Necessity
-* Scope
-* Logging
-* Business justification
-
-## 5. Review VPN Access
-
-Assess:
-
-* User VPN access
-* Site-to-site trust
-* Split tunnelling
-* Authentication
-
-## 6. Review Monitoring
-
-Assess:
-
-* Logging
-* SIEM integration
-* SNMP
-* Alerting
-
-# Common Findings
-
-### Any-Any Rules
-
-One of the most common checks during a firewall review is identifying so-called **"Any-Any"** rules.
-
-The term is frequently used in security reports and review methodologies, yet it is often misunderstood. While many reviewers refer to anything containing `any any` as an Any-Any rule, not all rules are equally risky. Before assessing the security impact of a rule, it is important to understand exactly what is being permitted.
-
-A firewall rule generally consists of:
-
-```text
-Source -> Destination -> Protocol / Service -> Action
-```
-
-For example:
-
-```text
-Corp Users -> Internet -> HTTPS -> Permit
-```
-
-In this case, internal users are allowed to browse the web over HTTPS.
-
-The **classic (true) Any-Any rule** looks like this:
-
-```text
-permit ip any any
-```
-
-Breaking it down:
-
-```text
-permit = allow
-ip     = all IP traffic
-any    = any source
-any    = any destination
-```
-
-In practice, this means:
-
-```text
-Anything -> Can communicate with -> Anything
-```
-
-From a security perspective, this is typically the most concerning type of rule because it removes the segmentation normally enforced by the firewall. For example, internet users can talk to Domain Controllers or Guest WiFi users to Production servers. For this reason, true Any-Any rules are almost always investigated during a firewall review and frequently result in findings.
-
-### Protocol Any-Any Rules
-
-Not every `any any` rule grants unrestricted access. During the review of the Cisco FTD configuration, several rules similar to the following were identified:
-
-```text
-permit gre any any
-permit ipinip any any
-permit 41 any any
-```
-
-At first glance these appear alarming because they contain `any any`, however the protocol is restricted. For example, the first only allows GRE traffic from any source to any destination, rather than "Allow all traffic". Similarly, `permit ipinip any any` allows only IP-in-IP encapsulated traffic. 
-
-These protocols are commonly used for:
-
-* VPN connectivity
-* Tunnel interfaces
-* Site-to-site connections
-* Cloud networking
-
-In our configuration these entries appeared within the **Default Tunnel Action Rule**, suggesting they are used to support VPN infrastructure rather than general user traffic. For this reason, Protocol Any-Any rules are typically classified as: `Review Required` rather than `Finding Confirmed`; context is essential.
-
-### Service Any-Any Rules
-
-Another variation limits traffic by service rather than protocol.
-
-For example, `permit tcp any any eq 3389`:
-
-```text
-permit = allow
-tcp    = TCP traffic
-any    = any source
-any    = any destination
-3389   = RDP
-```
-
-This effectively means:
-
-```text
-Anyone
-    ↓
-Can access
-    ↓
-RDP on any destination
-```
-
-Visualised:
-
-```text
-Any Source
-     |
-   RDP
-     |
-     v
-Any Destination
-```
-
-While not a true Any-Any rule, it may still represent excessive access depending on the environment.
-
-Other examples include `permit tcp any any eq 22` and `permit tcp any any eq 445`. These rules warrant review because they expose specific services rather than unrestricted connectivity.
-
-### Broad Access Rules
-
-A fourth category involves large networks rather than the keyword `any`. Consider `permit ip Corp_Network any`; this is not technically an Any-Any rule, yet the effect may be similar.TThe rule allows:
-
-```text
-Entire Corporate Network
-    ↓
-Anything
-```
-
-Such rules often emerge over time as environments grow and exceptions accumulate. Although they may have a legitimate business purpose, they deserve the same scrutiny as traditional Any-Any rules.
-
-### Not Every Any-Any Rule Is a Finding
-
-A common mistake during firewall reviews is treating every occurrence of `any any` as a vulnerability.
-
-In reality, the review process should follow this sequence:
-
-```text
-Identify Rule
-    ↓
-Understand Context
-    ↓
-Determine Purpose
-    ↓
-Assess Risk
-```
-
-For example:
-
-```text
-permit ip any any
-```
-
-usually represents a significant reduction in network segmentation and should be carefully justified.
-
-Conversely:
-
-```text
-permit gre any any
-```
-
-may simply be enabling site-to-site VPN functionality and may be entirely legitimate.
-
-The objective of the reviewer is therefore not to find `any any` strings, but to determine whether a rule grants more access than necessary.
-
-This distinction is an important reminder that automated tools can highlight interesting rules, but human analysis is still required to determine whether those rules represent genuine security findings.
-
-
-### Excessively Permissive Rules
-
-```text
-Entire Network
-    ↓
-Entire Network
-```
-
-***
-
-### Weak Administrative Controls
-
-* Local-only authentication
-* No MFA
-* Excessive admin accounts
-
-***
-
-### Weak Segmentation
-
-```text
-Internet
-    ↓
-Internal Network
-```
-
-***
-
-### Excessive VPN Access
-
-```text
-VPN Users
-    ↓
-Entire Corp Network
-```
-
-***
-
-### Missing Logging
-
-Traffic permitted but not logged.
-
-***
-
-### Unused / Stale Rules
-
-Rules no longer required.
-
-***
-
-### Shadowed Rules
-
-Rules that can never be matched because an earlier rule overrides them.
-
-***
-
-# Automation
-
-### Automated Analysis
-
-* Configuration parsing
-* Rule extraction
-* Zone mapping
-* VPN inventory
-* NAT inventory
-* Management surface identification
-
-### Manual Validation
-
-Still required for:
-
-* Rule intent
-* Business justification
-* Compensating controls
-* Risk determination
-
-# Conclusion
 
