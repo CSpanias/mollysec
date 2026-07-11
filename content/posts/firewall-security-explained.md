@@ -1,5 +1,5 @@
 ---
-title: "Firewall Reviews Explained"
+title: "Firewall Security Explained"
 date: "2026-07-03"
 author: "mollysec"
 description: "How to Review a Firewall Configuration."
@@ -11,13 +11,6 @@ draft: true
 ---
 
 # Introduction
-
-{{<figure 
-    src="/images/"
-    alt=""
-    width="950"
-    caption=""
->}}
 
 Firewall (firewall) reviews are a common component of infrastructure security assessments, yet many practitioners are unfamiliar with how they are performed in practice.
 
@@ -160,19 +153,13 @@ We now understand the architecture well enough to answer the next question: **wh
  
 ## Access Control
 
-Once the architecture and trust boundaries have been identified, we can begin reviewing how traffic is permitted to flow between them. The objective of this phase is determining **which systems can communicate with one another** and whether those communications align with the organisation's security requirements.
+Once the architecture and trust boundaries have been identified, we can begin reviewing how traffic is permitted to flow between them. The objective of this phase is determining **which systems can communicate with one another** and whether those communications align with the organisation's security requirements. In Cisco firewalls, this is primarily achieved through ACLs.
 
-In Cisco firewalls, this is primarily achieved through **Access Control Lists (ACLs)**. ACLs **define which traffic is permitted or denied** as it traverses the firewall and therefore represent one of the most important parts of the configuration. A review of the firewall's ACLs helps answer questions such as:
+### Access Control Lists
 
-* Which systems can communicate?
-* Which services are allowed?
-* Which trust boundaries can be crossed?
-* Is access restricted according to the principle of least privilege?
-* Are there any overly permissive rules?
+**Access Control Lists (ACLs) define which traffic is permitted or denied** as it traverses the firewall and therefore represent one of the most important parts of the configuration. Each ACL consists of one or more rules evaluated by the firewall to determine how traffic should be handled.
 
-### What Are ACLs?
-
-**An ACL is a collection of rules** evaluated by the firewall to determine whether traffic should be permitted or denied. As an example, the below rule permits HTTPS traffic to the `WEB-SERVER` object:
+As an example, the below rule permits HTTPS traffic to the `WEB-SERVER` object:
 
 {{<figure 
     src="/images/fw-audit-cisco-acl-syntax.png"
@@ -181,9 +168,9 @@ In Cisco firewalls, this is primarily achieved through **Access Control Lists (A
     caption=""
 >}}
 
-Cisco ASA/FTD firewalls support both Standard and Extended ACLs; the latter are more common and can filter traffic based on source, destination, protocol, and port information.
+> *Cisco ASA/FTD firewalls support both [Standard and Extended ACLs](https://www.cisco.com/c/en/us/support/docs/security/ios-firewall/23602-confaccesslists.html#toc-hId--2010465938); the latter are more common and can filter traffic based on source, destination, protocol, and port information.*
 
-An important consideration is that **ACLs are evaluated from top to bottom**, which makes rule order extremely important. When a packet matches a rule, processing stops and the associated action is applied.
+An important consideration is that **ACLs are evaluated from top to bottom**, which makes rule order extremely important. When a packet matches a rule, processing stops and the associated action is applied. This behaviour is commonly referred to as **first-match processing**.
 
 For example, the below order means that traffic destined for `10.10.10.10:22` will be denied because the first rule matches before the second rule is evaluated:
 
@@ -194,47 +181,109 @@ For example, the below order means that traffic destined for `10.10.10.10:22` wi
     caption=""
 >}}
 
-A poorly positioned rule can unintentionally override more restrictive controls further down the ACL.
+### Objects & Object Groups
+
+Large firewall deployments often contain thousands of individual systems and networks. To simplify policy management, Cisco firewalls support network objects, service objects, and object groups.
+
+Notice that on the first ACL example we saw, the `FW_ACL` references the object name (`WEB-SERVER`) rather than the underlying IP address (`172.16.10.100`). Object groups extend this concept by allowing multiple objects to be grouped together and referenced through a single ACL entry.
+
+This improves readability, simplifies maintenance, and reduces the likelihood of configuration errors.
+
+{{<figure 
+    src="/images/fw-audit-network-object-groups.png"
+    alt="Creating and using network object groups."
+    width="950"
+    caption=""
+>}}
 
 ### Permit vs Deny
 
-Every ACL rule ultimately performs one of two actions: `Permit` or `Deny`. Permit rules allow traffic to flow between networks, while deny rules explicitly block communication.
+Every ACL rule ultimately performs one of two actions: `permit` or `deny`. Permit rules allow traffic to flow between networks, while deny rules explicitly block communication. An important thing to know when reviewing ACLs is the **implicit deny**: if traffic does not match any ACL entry, the firewall will generally deny the traffic by default.
 
-During a review, it is important to understand:
+Conceptually, every ACL ends with `deny ip any any`, even if that rule is not explicitly configured. This behaviour helps enforce a least-privilege approach where only explicitly permitted traffic is allowed. Some organisations choose to configure an explicit "deny all" rule at the end of an ACL to make this behaviour visible.
 
-* Which communications have been intentionally permitted/denied.
-* Whether the resulting policy reflects the organisation's security requirements.
+The main thing we look out for here is **overly permissive rules**, such as `permit ip any any` or `permit tcp any any`. These rules allow communication between extremely broad groups of systems and significantly increase the environment's attack surface.
 
-The ratio of permit and deny rules can also provide insight into the overall design philosophy of the firewall policy.
+To tie this section together let's look at an example. The first three ACL entries shown below, permit specific communications between defined systems which is how a good ACL looks like. However, they are followed by an overly permissive rule which essentially negates the last explicitly defined "deny all" rule:
 
-### The Implicit Deny
+{{<figure 
+    src="/images/fw-audit-acls.png"
+    alt="Examples of various ACL rules."
+    width="950"
+    caption=""
+>}}
 
-One of the most important concepts in firewall security is the implicit deny: **if traffic does not match any ACL entry, the firewall will generally deny the traffic by default**.
+Based on the above ruleset, the third ACL entry appears to restrict RDP access to the `DOMAIN-CONTROLLER` from the `JUMP-HOST`. However, the intended restriction is completely negated by the subsequent "allow all" rule; traffic that does not match the third rule will ultimately be permitted by the fourth.
 
-Conceptually, every ACL ends with `deny ip any any`, even if that rule is not explicitly configured. This behaviour helps enforce a least-privilege approach where only explicitly permitted traffic is allowed. 
-
-Some organisations choose to configure an explicit `deny ip any any` rule at the end of an ACL to make this behaviour visible and provide additional logging capabilities.
-
-### Any-Any Rules
-
-One of the first checks during an ACL review is the identification of **overly permissive rules** (e.g. `permit ip any any` or `permit tcp any any`).
-
-These rules allow communication between extremely broad groups of systems and can significantly increase the attack surface of the environment. Although there are occasionally legitimate business reasons for broad access, such rules typically warrant additional review and justification.
-
-### Object Groups
-
-Large firewall deployments often contain thousands of individual systems and networks. To simplify policy management, Cisco firewalls support Network Objects, Service Objects, and Object Groups. For example:
-
-`object network WEB-SERVER`
-`host 172.16.10.100`
-
-Instead of referencing the IP address directly in ACLs, administrators can reference the object name:
-
-`access-list FW_ACL extended permit tcp any object WEB-SERVER eq 443`
-
-Object groups extend this concept by allowing multiple objects to be grouped together and referenced through a single ACL entry. This improves readability, simplifies maintenance, and reduces the likelihood of configuration errors.
+As a result, any host can successfully RDP to the `DOMAIN-CONTROLLER` no problem!
 
 ## VPN Security
+
+Virtual Private Networks (VPNs) extend connectivity beyond the local environment and therefore represent some of the most important trust boundaries within the network. They allow users, cloud environments, branch offices, and business partners to securely communicate across untrusted networks such as the Internet.
+
+Cisco ASA/FTD firewalls support two broad VPN categories:
+* [Remote Access VPNs](https://docs.manage.security.cisco.com/cdfmc/c_about_ra_vpns.html#!g_ftd_ra_vpns.html) allow individual users to securely connect to corporate resources from external locations.
+* [Site-to-Site VPNs](https://docs.manage.security.cisco.com/cdfmc/c_about_ra_vpns.html#!c_about_s2s_vpns.html) connect networks together and are commonly used for cloud connectivity, branch offices, business partners, and third-party service providers.
+
+While both VPN types allow bidirectional communication, Remote Access VPNs connect users to networks, whereas Site-to-Site VPNs connect networks to networks.
+
+{{<figure 
+    src="/images/fw-audit-vpn-types.png"
+    alt="Different types of VPN connections."
+    width="950"
+    caption=""
+>}}
+
+### Remote Access VPNs
+
+Remote Access VPN users are typically assigned addresses from dedicated VPN pools after successful authentication. The below configuration creates the `MGMT_VPN_POOL` pool and allows VPN clients to be assigned addresses between `192.168.100.10` and `192.168.101.250`:
+
+{{<figure 
+    src="/images/fw-audit-vpn-pools.png"
+    alt="Remote access VPN pool definition."
+    width="950"
+    caption=""
+>}}
+
+Large numbers of VPN pools may indicate multiple user populations, different geographic regions, or separate third-party access requirements.
+
+### Site-to-Site VPNs
+
+Site-to-Site VPNs are commonly implemented using Virtual Tunnel Interfaces (VTIs). Understanding these connections is critical because **every VPN effectively extends the organisation's trust boundary** beyond the local network. For example, the below configuration allows us to quickly identify several VPN characteristics: 
+
+{{<figure 
+    src="/images/fw-audit-site-to-site-vpns.png"
+    alt="Site-to-Site VPN pool definition."
+    width="650"
+    caption=""
+>}}
+
+The tunnel's description indicates its purpose (`AZURE-VTI-PRIMARY`), i.e. connectivity between the organisation's internal network and an Azure-hosted environment. The VPN traffic terminates on the `INTERNET` interface before being sent to the remote VPN peer at `20.50.100.10`. It also lets us identify the VPN technology in use, in this case, `ipsec`.
+
+### VPN Termination
+
+The term VPN "termination" can initially seem counterintuitive because the local VPN endpoint is defined using the `source` keyword. In layman's terms a VPN termination point is **the place where the VPN tunnel is established** and **where traffic is encrypted before leaving and decrypted after arriving**.
+
+In the below example, the VPN tunnel is established between the firewall's `INTERNET` interface and the remote Azure VPN Gateway. These two systems act as the local and remote VPN endpoints that form the IPsec tunnel. Traffic exchanged between the two networks is encrypted before entering the IPsec tunnel and decrypted when it reaches the opposite endpoint.
+
+{{<figure 
+    src="/images/fw-audit-vpn-termination.png"
+    alt="VPN termination interface."
+    width="950"
+    caption=""
+>}}
+
+### Disabled VPNs
+
+Disabled VPNs generally do not introduce active connectivity risks because they cannot pass traffic. However, they often indicate legacy business relationships, incomplete migrations, or obsolete configuration that should be reviewed and removed where appropriate to reduce administrative overhead and configuration complexity.
+
+{{<figure 
+    src="/images/fw-audit-disabled-vpns.png"
+    alt="An example of an administrative disabled VPN defintion."
+    width="650"
+    caption=""
+>}}
+
 ## Administrator Authentication
 ## Monitoring & Logging
 ## Control Plane Protection
