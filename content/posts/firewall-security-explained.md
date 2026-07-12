@@ -328,8 +328,58 @@ Before we move onto the next section, let's see a sample configuration and how t
 
 Regardless of the protocol used, the goal remains the same: centralising AAA, improving auditability, and reducing reliance on local administrator accounts. The objective here is determining **whether administrative access to the firewall is appropriately controlled, monitored, and auditable**.
 
-## Monitoring & Logging
 ## Control Plane Protection
+
+Up to this point we have primarily focused on traffic flowing *through* the firewall (data plane). However, it is equally important to understand **how traffic is permitted to reach the firewall itself** (control plane).
+
+The control plane consists of traffic destined to the firewall itself, including management, monitoring, routing, and VPN-related services. Protecting the control plane ensures that only authorised systems can communicate directly with the firewall. Services such as SSH, HTTPS, and SNMP are hosted directly on the device and therefore form part of its control plane. If these services are exposed to untrusted networks, an attacker may be able to target the firewall directly rather than attempting to traverse it.
+
+{{<figure 
+    src="/images/fw-audit-control-vs-data-plane.png"
+    alt="The difference between the control plane and data plane."
+    width="750"
+    caption=""
+>}}
+
+One of the first things to review is which hosts and networks are permitted to access administrative services. For example:
+
+ssh 10.99.99.0 255.255.255.0 MGMT
+ssh 10.10.10.0 255.255.255.0 MGMT
+
+The above configuration allows systems within the `10.99.99.0/24` and `10.10.10.0/24` networks to establish SSH sessions to the firewall's `MGMT` interface. When reviewing these entries, we should verify that access is limited to legitimate management networks and not unnecessarily exposed to broader user populations.
+
+Cisco firewalls can also apply ACLs to the control plane itself. In the example below, the `CONTROL_PLANE_BLOCK` ACL is first defined using the `access-list` keyword and then applied using the `access-group` keyword:
+
+{{<figure 
+    src="/images/fw-audit-control-plane-acl.png"
+    alt="Definition and application of a contol-plane ACL."
+    width="750"
+    caption=""
+>}}
+
+The `control-plane` option **changes the scope of the ACL from traffic traversing the firewall to traffic destined to the firewall itself**. As a result, all IP traffic arriving on the `INTERNET` interface and destined to services hosted on the firewall would be denied:
+
+A Control Plane ACL only affects traffic destined to services hosted directly on the firewall. Traffic traversing the firewall continues to be processed by the normal data-plane ACLs. In the example above, direct access to the firewall is blocked, while traffic passing through the firewall towards internal resources remains unaffected.
+
+{{<figure 
+    src="/images/fw-audit-control-vs-data-plane-diagram.png"
+    alt="A diagram of the difference between the contol plane and the data plane."
+    width="950"
+    caption=""
+>}}
+
+This allows organisations to explicitly define which hosts and networks may access management services hosted on the firewall. **The goal is to ensure that only authorised administrators and monitoring systems can communicate directly with the firewall itself**.
+
+## Logging
+
+
+## Monitoring
+
+
+
+
+## Maybe NAT, WebVPN
+
 ## Automating the Review with Firewall-Audit
 
 
