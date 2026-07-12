@@ -285,6 +285,49 @@ Disabled VPNs generally do not introduce active connectivity risks because they 
 >}}
 
 ## Administrator Authentication
+
+Firewalls sit at the centre of the network and often provide direct access to critical infrastructure. As a result, reviewing how administrators authenticate to the device is just as important as reviewing the firewall policies themselves. A weak authentication configuration can allow an attacker to bypass all other security controls and gain full administrative control of the firewall.
+
+Cisco ASA/FTD firewalls support several mechanisms for handling Authentication, Authorisation, and Accounting (AAA). The primary objective of these mechanisms is centralising authentication decisions rather than maintaining separate local accounts on every device. The most common protocols are:
+
+* [Terminal Access Controller Access Control System (TACACS+)](https://www.cisco.com/web/fw/tools/cisco-business/emulators/switch/catalyst/c1300-24mgp-4x/html/cat1k/english/1300/t_management_access_authentication.html#!t_tacacs_client.html) is one of the most common authentication protocols used for Cisco device administration. AAA decisions are delegated to dedicated TACACS+ servers.
+* [Remote Authentication Dial-In User Service (RADIUS)](https://www.cisco.com/web/fw/tools/cisco-business/emulators/switch/catalyst/c1300-24mgp-4x/html/cat1k/english/1300/t_management_access_authentication.html#!radius-client.html) provides a similar centralised authentication model and is commonly used for network device administration, VPN authentication, and wireless access control.
+* [Security Assertion Markup Language (SAML)](https://www.cisco.com/site/us/en/learn/topics/security/what-is-saml.html) integrates the firewall with external identity providers such as Microsoft Entra ID, Okta, and Ping Identity. Rather than authenticating directly against the firewall, administrators and VPN users are redirected to a trusted identity provider. This enables capabilities such as Single Sign-On (SSO), Multi-Factor Authentication (MFA), and centralised identity management.
+
+In many environments, these protocols are backed by dedicated AAA platforms such as [Cisco Identity Services Engine (ISE)](https://www.cisco.com/c/en/us/td/docs/security/ise/3-4/admin_guide/b_ise_admin_3_4/b_ISE_admin_overview.html#concept_vt3_bbb_1kb), Microsoft Network Policy Server (NPS), or FreeRADIUS. Rather than authenticating users locally, the firewall forwards authentication requests using TACACS+ or RADIUS to one of these platforms. The AAA platform then validates the user's identity against a central identity source such as Active Directory, LDAP, or Microsoft Entra ID and returns the appropriate authentication and authorisation decision.
+
+While ISE is Cisco's enterprise AAA solution, NPS and FreeRADIUS provide similar centralised authentication capabilities and are commonly encountered in mixed-vendor environments.
+
+The takeaway here is that TACACS+ and RADIUS are protocols that define how the firewall communicates with a centralised authentication system, while TACACS+, RADIUS, ISE, NPS, or FreeRADIUS are AAA servers/platforms that receive those requests and make the actual AAA decisions:
+
+
+{{<figure 
+    src="/images/fw-audit-admin-auth.png"
+    alt="A diagram depicting the authentication flow in CICSO environments."
+    width="950"
+    caption=""
+>}}
+
+Smaller environments often authenticate directly against dedicated TACACS+ or RADIUS servers. Larger environments commonly introduce AAA platforms such as Cisco ISE, Microsoft NPS, or FreeRADIUS, which in turn integrate with central identity stores such as Active Directory, Microsoft Entra ID, or LDAP.
+
+Before we move onto the next section, let's see a sample configuration and how the respective authentication flow would look like:
+
+{{<figure 
+    src="/images/fw-audit-admin-auth-flow-config.png"
+    alt="An example TACACS+ configuration."
+    width="750"
+    caption=""
+>}}
+
+{{<figure 
+    src="/images/fw-audit-admin-auth-flow.png"
+    alt="A diagram depicting the authentication flow in CICSO environments."
+    width="950"
+    caption=""
+>}}
+
+Regardless of the protocol used, the goal remains the same: centralising AAA, improving auditability, and reducing reliance on local administrator accounts. The objective here is determining **whether administrative access to the firewall is appropriately controlled, monitored, and auditable**.
+
 ## Monitoring & Logging
 ## Control Plane Protection
 ## Automating the Review with Firewall-Audit
