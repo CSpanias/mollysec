@@ -12,61 +12,54 @@ draft: true
 
 # Introduction
 
-Firewall (firewall) reviews are a common component of infrastructure security assessments, yet many practitioners are unfamiliar with how they are performed in practice.
+After the article about [Email Security](https://mollysec.com/posts/email-security-explained/), I thought I would continue the trend of writing about "*boring*" and "*unpopular*" security assessments. I had a close look at various infrastructure-related components that are never discussed in popular "pentesting" courses and one topic immediately stood out: **firewall configuration reviews**.
 
-This article explains:
-- The purpose of a firewall review
-- Common review methodology
-- Typical findings
-- Limitations of automated tools
-- How firewall security can be assessed manually
+These are often treated like a checkbox exercise: more like "*let's get it over with*" rather than "*let's dive into it*". After spending some time fiddling with CISCO configurations and documentation, I have to admit that I now find them a bit less boring than I did before. That's progress, isn't?
+
+We will keep things aligned with the *one-level-deeper* philosophy: high-level enough to avoid information overload, but detailed enough to know what we are doing.
+
+Let's dive straight in.
 
 # TL;DR on Firewalls
 
-What is a firewall?
-Stateful vs stateless inspection
-Zones and segmentation
-Why organizations use them
+**A firewall is a security device that controls traffic flowing between networks**. Depending on its configuration, it can permit, deny, translate, inspect, and monitor traffic crossing organisational trust boundaries.
 
-Objectives + Scope -> We get a firewall configuration dump (or running configuration export) which can be huge (multiple files, 6k+ lines each)
+Traditional packet-filtering firewalls make decisions based on packet attributes such as source address, destination address, protocol, and port numbers. Modern firewalls perform **stateful inspection**, tracking active connections and using connection state when evaluating subsequent traffic. For example, return traffic associated with an established connection can typically be permitted without requiring an additional rule.
+
+Firewalls are commonly used to implement **network segmentation** by dividing environments into security zones such as Internet, Corporate, DMZ, Management, and Cloud. Traffic moving between these zones can then be controlled using ACLs, security policies, NAT, VPNs, and other security controls.
+
+From a security perspective, a firewall serves three primary purposes:
+
+* Enforcing network segmentation
+* Restricting communication between trust boundaries
+* Monitoring and auditing network activity
+
+In practice, firewall reviews are often performed using configuration dumps or running-configuration exports that can span thousands of lines. The goal of this article is to identify and extract the information that is most relevant to security. Although the examples are based on Cisco ASA/FTD syntax, the concepts discussed are universal for all devices.
 
 # Firewall Review Process
 
-> Talk about the logic behind each section -> what each answers
+## Overview
 
-|Section|Question|
-|---|---|
-|Network Architecture|What am I protecting?|
-|Access Control|Who can talk to whom?|
-|VPN Security|Who can access the environment remotely?|
-|Administrator Authentication|Who can administer the firewall?|
-|Monitoring & Logging|How will I know if something goes wrong?|
-|Control Plane Protection|Can somebody attack the firewall itself?|
+This article is split into eight "*review areas*" covering (what I think are) the most relevant to security components of a firewall configuration. While the examples focus on Cisco ASA/FTD configurations, the underlying concepts are vendor-agnostic, so you should have no problem applying them to other devices, such as Fortinet, Palo Alto, etc.
+
+| Section                      | Security Question                                                  |
+| ---------------------------- | ------------------------------------------------------------------ |
+| Network Architecture         | What assets and trust boundaries am I protecting?                  |
+| Access Control               | Who can communicate across those trust boundaries?                 |
+| VPN Security                 | Which external users and networks can access the environment?      |
+| Administrator Authentication | Who can administer the firewall and how are they authenticated?    |
+| Control Plane Protection     | Can untrusted systems communicate directly with the firewall?      |
+| Logging                      | Can security events and administrative actions be investigated?    |
+| Monitoring                   | Can security or operational issues be detected in a timely manner? |
+| NAT                          | Which internal services and networks are exposed externally?       |
 
 ## Network Architecture
 
-Before reviewing firewall rules, we first need to understand the network architecture and identify the trust boundaries between different parts of the environment. **A firewall review is ultimately an assessment of how traffic is permitted to cross those trust boundaries**.
+**A firewall review is ultimately an assessment of how traffic is permitted to cross those trust boundaries**. And to assess something (effectively), we first need to undestand what we are dealing with. In this case, understand the network architecture and identify the trust boundaries between the environment's different parts.
 
-Reviewing thousands of access control rules without first understanding the underlying architecture can lead to incorrect conclusions and missed findings. This section tries to do just that by focusing on the following areas:
+### Networks & Interfaces
 
-|Section|Question|
-|---|---|
-|Network Identification|Which networks exist?|
-|Security Zones|How are networks grouped?|
-|Trust Boundaries|How do security zones relate to one other?|
-|Publicly Exposed Networks|Which networks are internet-accessible?|
-|Management Interfaces|How is firewall administered?|
-
-Let's get right into it!
- 
-### Network Identification
-
-The first objective of a firewall review is **identifying the networks that make up the environment** and the interfaces (IFs) that connect them. 
-
-These may include user networks, [DMZs](https://www.okta.com/en-gb/identity-101/dmz/), public-facing services, etc. Understanding which networks exist provides the context required for the remainder of the review. Without this context, it is difficult to determine whether a firewall rule allows legitimate communication or introduces unnecessary risk.
-
-
-One of the first tasks during a configuration review is therefore **building a high-level map of the environment** and **identifying the role of each network**.
+Let's start by identifying the networks that make up the environment and the interfaces (IFs) that connect them. These may include user networks, [DMZs](https://www.okta.com/en-gb/identity-101/dmz/), and public-facing services, among others. Understanding which networks exist provides the context required for the remainder of the review. Without this context, it is difficult to determine whether a firewall rule allows legitimate communication or introduces unnecessary risk.
 
 In Cisco ASA/FTD configurations, IFs are typically assigned a logical name using the [`nameif`](https://www.grandmetric.com/knowledge-base/design_and_configure/how-to-configure-security-level-and-nameif-on-cisco-asa/) directive. Although the physical interface name identifies the actual interface (e.g. `Port-channel1.100`), the `nameif` usually provides a more useful description of the network connected to it:
 
@@ -77,9 +70,13 @@ In Cisco ASA/FTD configurations, IFs are typically assigned a logical name using
     caption=""
 >}}
 
+By just doing that, we can see that this environment is pretty-well segmented as there are clearly defined areas: Internet, Corporate, DMZ, Management, etc.
+
 ### Security Zones
 
-As environments grow, reviewing individual IFs becomes increasingly difficult. To simplify policy management, IFs are often grouped into security zones. **A security zone represents a collection of networks with a similar trust level**. Rather than applying policies to every individual IF, firewalls can enforce controls between zones.
+As environments grow, reviewing individual IFs becomes increasingly difficult. To simplify policy management, IFs are often grouped into security zones. **A security zone represents a collection of networks with a similar trust level**.
+
+Rather than applying policies to every individual IF, firewalls can enforce controls between zones.
 
 Identifying these zones helps us understand the organisation's trust model and **network segmentation strategy**. In the example below, multiple IFs have been grouped into the same security zone because they share a similar trust level:
 
@@ -90,19 +87,23 @@ Identifying these zones helps us understand the organisation's trust model and *
     caption=""
 >}}
 
+We are now seeing a more high-level segmentation defined: "DMZ stuff", "Corporate stuff", "Cloud stuff", etc. which indicates that are probably rules applied on the security zones rather than individual IFs. That's good because we will make our life easier!
+
 ### Trust Boundaries
 
-**Trust boundaries exist whenever traffic moves between zones with different trust levels**. This allows us to reason about traffic flowing between trust levels rather than focusing on individual networks. However, trust boundaries are not explicitly defined in the configuration. Instead, they are identified by analysing how security zones relate to one another and where traffic is expected to move between networks with different trust levels.
+**Trust boundaries exist whenever traffic moves between zones with different trust levels**, for example, between `CORPORATE` and `INTERNET`. These help us to reason about traffic flowing between trust levels rather than focusing on individual networks.
 
-Let's see how the security zones identified during our review map to their respective trust levels:
+The thing is that trust boundaries are not explicitly defined in the configuration. Instead, they are identified by analysing **how security zones relate to one another** and **where traffic is expected to move** between networks. 
 
-| Zone             | Trust Level        |
-| ---------------- | ------------------ |
-| INTERNET\_ZONE   | Untrusted          |
-| DMZ\_ZONE        | Semi-Trusted       |
-| CORPORATE\_ZONE  | Trusted            |
-| MANAGEMENT\_ZONE | Highly Trusted     |
-| CLOUD\_VPN\_ZONE | External / Partner |
+In our example, we could map the identified security zones to their respective trust levels:
+
+| Zone             | Trust Level        | Reason |
+| ---------------- | ------------------ | ------ |
+| `INTERNET_ZONE`   | Untrusted          | Publicly Exposed |
+| `DMZ_ZONE`        | Semi-Trusted       | Internal But |
+| `CORPORATE_ZONE`  | Trusted            | Internal |
+| `MANAGEMENT_ZONE` | Highly Trusted     | Internal & Restricted |
+| `CLOUD_VPN_ZONE` | External / Partner | Third-Party, Not In Our Control |
 
 We can infer several trust boundaries requiring review based on the above table, but keep in mind that this is still theoretical (for now). Identifying these boundaries helps us understand **where firewall controls are expected to enforce security policies**.
 
@@ -110,35 +111,39 @@ In general, interesting boundaries involve internet-facing networks, management 
 
 | Trust Boundary                     |
 | ---------------------------------- |
-| INTERNET_ZONE ↔ DMZ_ZONE         |
-| INTERNET_ZONE ↔ CORPORATE_ZONE   |
-| CORPORATE_ZONE ↔ MANAGEMENT_ZONE |
-| CORPORATE_ZONE ↔ CLOUD_VPN_ZONE  |
+| `INTERNET_ZONE` ↔ `DMZ_ZONE`         |
+| `INTERNET_ZONE` ↔ `CORPORATE_ZONE`   |
+| `CORPORATE_ZONE` ↔ `MANAGEMENT_ZONE` |
+| `CORPORATE_ZONE` ↔ `CLOUD_VPN_ZONE`  |
 
-Notice that these boundaries were selected because they represent the most interesting trust transitions within the environment. For now, we are simply identifying areas that require further review; we are not claiming that traffic is permitted between these zones.
+Notice that these boundaries were selected because they represent the most interesting trust transitions within the environment. For now, we are simply identifying areas that require further review; we are not claiming that traffic is permitted between these zones. We know nothing about that yet!
 
-For example, although a potential trust boundary may exist between the `INTERNET_ZONE` and the `MANAGEMENT_ZONE`, we would generally not expect direct management access from the internet.  If there is one, that would probaly be the result of poor security design architecture.
+For example, we might find a trust boundary between the `INTERNET_ZONE` and the `MANAGEMENT_ZONE`, which would probaly be the result of poor security design architecture and a finding on our report as we wouldn't expect a management-related IF to be publicly exposed!
 
-> *Confirming whether traffic is actually permitted across these boundaries is part of the next phase: **Access Control**.*
+> *Confirming whether traffic is actually permitted across these boundaries is part of the review area: **Access Control**.*
 
 ### Publicly Exposed Networks
 
-One of the most important tasks during a firewall review is **identifying which IFs are exposed to the internet**. These IFs commonly host or terminate public services, remote access VPNs, site-to-site VPNs, etc. Because they are directly reachable by external users, they typically **represent the highest-risk attack surface** within the environment.
+Speaking of publicly exposed IFs, that's one of the most interesting configurations to search for. These IFs commonly host or terminate public services, remote access VPNs, site-to-site VPNs, etc. and **they represent the highest-risk attack surface** within the environment.
 
 In Cisco ASA/FTD configurations, internet-facing IFs can often be identified through a combination of their logical names (`nameif`), public IP addressing, and their role in VPN termination:
 
 {{<figure 
     src="/images/fw-audit-internet-exposed-pubIps-nameif-vpnTermination.png"
     alt="Enumerating publicly exposed interfaces."
-    width="550"
+    width="650"
     caption=""
 >}}
 
+On the above screenshot, the logical naming of the `INTERNET` interface makes it pretty clear what its role is. In addition, we can also see that it is also a VPN termination endpoint (more on that later).
+
 ### Management Interfaces
 
-Management IFs are used by administrators to configure, monitor, and maintain the firewall. Common management services include SSH and HTTPS, while authentication is often performed using services such as TACACS, RADIUS, or SAML. These IFs should be carefully reviewed as unauthorised access could result in complete compromise of the firewall itself.
+Management interfaces are used by administrators to configure, monitor, and maintain the firewall using services hosted on the firewall device itself, such as SSH and HTTPS.These interfaces must be very well protected as unauthorised access could result in complete compromise of the firewall itself.
 
-We have already seen that our sample configuration includes an IF called `MGMT` which is under the `MANAGEMENT_ZONE` security zone as well as another IF called `management`. In the example below, the firewall's `MGMT` IF can be administered via SSH from the `10.99.99.0/24` and `10.10.10.0/24` networks. This allows us to identify both the management IF and the networks authorised to access it:
+> *We will see how administrators authenticate to the firewall in the [Administration Authentication](https://mollysec.com/posts/firewall-security-explained/#administrator-authentication) section.*
+
+Our sample config includes two management-related interfaces: `management` and `MGMT`. In the example below, the latter can be administered via SSH from the two specified networks which allows us to identify both the management interfaces and the networks authorised to access it:
 
 {{<figure 
     src="/images/fw-audit-mgmt-ifs.png"
@@ -247,6 +252,19 @@ Remote Access VPN users are typically assigned addresses from dedicated VPN pool
 
 Large numbers of VPN pools may indicate multiple user populations, different geographic regions, or separate third-party access requirements.
 
+Cisco ASA/FTD firewalls support Remote Access VPN connectivity through WebVPN, a feature that allows users to establish VPN sessions using a web browser or dedicated VPN client. The configuration below enables the WebVPN service on the `INTERNET` interface, defines the TLS encryption policy used to protect VPN traffic, and enables additional security controls to help secure the VPN portal:
+
+{{<figure 
+    src="/images/fw-audit-webvpn.png"
+    alt="A sample WebVPN configuration."
+    width="650"
+    caption=""
+>}}
+
+WebVPN is designed to provide secure access for individual users. As a result, reviewing WebVPN configurations often focuses on which interfaces expose the VPN portal, which authentication mechanisms are used, whether Multi-Factor Authentication (MFA) is enforced, which VPN pools are assigned to users, and which internal resources are accessible after connection.
+
+Because WebVPN services are commonly exposed to the Internet, they often represent one of the most accessible entry points into the environment and should therefore receive particular attention during a firewall review.
+
 ### Site-to-Site VPNs
 
 Site-to-Site VPNs are commonly implemented using Virtual Tunnel Interfaces (VTIs). Understanding these connections is critical because **every VPN effectively extends the organisation's trust boundary** beyond the local network. For example, the below configuration allows us to quickly identify several VPN characteristics: 
@@ -330,9 +348,9 @@ Regardless of the protocol used, the goal remains the same: centralising AAA, im
 
 ## Control Plane Protection
 
-Up to this point we have primarily focused on traffic flowing *through* the firewall (data plane). However, it is equally important to understand **how traffic is permitted to reach the firewall itself** (control plane).
+Up to this point we have primarily focused on traffic flowing *through* the firewall (data plane), and not **how traffic is permitted to reach the firewall itself** (control plane). The latter includes operations like management, monitoring, routing, and VPN-related services. 
 
-The control plane consists of traffic destined to the firewall itself, including management, monitoring, routing, and VPN-related services. Protecting the control plane ensures that only authorised systems can communicate directly with the firewall. Services such as SSH, HTTPS, and SNMP are hosted directly on the device and therefore form part of its control plane. If these services are exposed to untrusted networks, an attacker may be able to target the firewall directly rather than attempting to traverse it.
+Protecting the control plane ensures that only authorised systems can communicate directly with the firewall. Services such as SSH, HTTPS, and SNMP are hosted directly on the device and therefore form part of its control plane. If these services are exposed to untrusted networks, an attacker may be able to target the firewall directly rather than attempting to traverse it.
 
 {{<figure 
     src="/images/fw-audit-control-vs-data-plane.png"
@@ -341,12 +359,16 @@ The control plane consists of traffic destined to the firewall itself, including
     caption=""
 >}}
 
-One of the first things to review is which hosts and networks are permitted to access administrative services. For example:
+One thing we can review is **which hosts/networks are permitted to access administrative services**. In the below configuration, systems within the two defined networks to establish SSH sessions to the firewall's `MGMT` interface:
 
-ssh 10.99.99.0 255.255.255.0 MGMT
-ssh 10.10.10.0 255.255.255.0 MGMT
+{{<figure 
+    src="/images/fw-audit-ssh-management-access.png"
+    alt="Reviewing access to the firewall's administrative services."
+    width="450"
+    caption=""
+>}}
 
-The above configuration allows systems within the `10.99.99.0/24` and `10.10.10.0/24` networks to establish SSH sessions to the firewall's `MGMT` interface. When reviewing these entries, we should verify that access is limited to legitimate management networks and not unnecessarily exposed to broader user populations.
+When reviewing these entries, we should verify that access is limited to legitimate management networks and not unnecessarily exposed to broader user populations.
 
 Cisco firewalls can also apply ACLs to the control plane itself. In the example below, the `CONTROL_PLANE_BLOCK` ACL is first defined using the `access-list` keyword and then applied using the `access-group` keyword:
 
@@ -372,15 +394,74 @@ This allows organisations to explicitly define which hosts and networks may acce
 
 ## Logging
 
+Firewall rules determine which traffic is permitted, VPNs determine who can access the environment remotely, and authentication controls determine who can administer the device. None of these controls are particularly useful if security events cannot be observed and investigated.
+
+Logging provides **visibility into firewall activity** and creates an **audit trail of security-relevant events**. During an incident, firewall logs are often one of the primary sources of evidence used to understand what happened, which systems were involved, and whether suspicious activity occurred.
+
+The objective of this phase is determining whether logging is enabled, where logs are being sent, which systems receive security events, and whether sufficient information is available for incident investigations.
+
+One of the primary goals of logging is **centralisation**. Instead of reviewing events separately on every firewall, router, switch, and server, organisations typically collect logs into a dedicated logging platform (Syslog server) or Security Information and Event Management (SIEM) solution. 
+
+Depending on the configuration, firewalls can generate logs for a wide range of activities, such as ACL matches, administrative actions, configuration changes, etc. Centralised logging improves visibility, simplifies investigations, and helps correlate events across multiple systems.
+
+The below sample configuration enables logging and forwards events to the specified Syslog server:
+
+{{<figure 
+    src="/images/fw-audit-syslog-server.png"
+    alt="A sample configuration of a Syslog server."
+    width="650"
+    caption=""
+>}}
+
+At the end of the day, the goal of logging is to **ensure that security-relevant events can be captured, retained, and investigated when required**.
 
 ## Monitoring
 
+While logging helps investigate events after they occur, **monitoring helps identify issues as they happen**. Effective monitoring allows administrators to track the health, performance, and availability of the firewall and receive alerts when abnormal conditions are detected. From our (security) perspective, we mostly care about the latter, i.e. alerts when the firewall becomes unavailable, the VPN tunnel fails, there is unusually high CPU utilisation, etc. 
 
+The objective of this phase is determining whether the firewall is actively monitored, which monitoring systems receive alerts, whether operational issues can be detected quickly, and whether sufficient visibility exists into the firewall's health and status.
 
+Cisco ASA/FTD firewalls commonly use the Simple Network Management Protocol (SNMP) to integrate with monitoring platforms. For example, the below configuration allows the monitoring server at `10.99.99.220` to collect information from the firewall using SNMP:
 
-## Maybe NAT, WebVPN
+{{<figure 
+    src="/images/fw-audit-snmp-server.png"
+    alt="A sample configuration of an SNMP server."
+    width="650"
+    caption=""
+>}}
 
-## Automating the Review with Firewall-Audit
+Monitoring is often centralised through dedicated monitoring platforms, such as SolarWinds, PRTG, Zabbix, etc. Security teams may also integrate monitoring data into SIEM platforms alongside firewall logs.
+
+Ultimately, the goal is ensuring that operational issues affecting the firewall can be detected, investigated, and resolved before they impact the wider environment.
+
+## Network Address Translation
+
+Network Address Translation (NAT) modifies packet addresses as traffic traverses the firewall. Although NAT is not a security control by itself, reviewing NAT policies helps us understand how internal systems communicate with external networks and which services are exposed beyond the organisation's trust boundaries.
+
+Therefore, it can help us identify which networks can access the Internet, which internal systems are publicly accessible, how traffic moves across trust boundaries, and whether NAT aligns with the architecture identified earlier.
+
+There are two common forms of NAT:
+* **Dynamic NAT (PAT)** &rarr; many internal systems share a single public IP address.
+* **Static NAT** &rarr; a fixed mapping between an internal and external address.
+
+> *Dynamic NAT is often implemented as Port Address Translation (PAT) where multiple internal systems share a single public IP address, with the firewall using source port numbers to keep individual connections separate.*
+
+The below Dynamic NAT rule translates traffic originating from the `CORPORATE` network to the IP address assigned to the `INTERNET` interface; this type of NAT is commonly used to provide Internet access for internal users and servers. The Static NAT rule has traffic arriving at the public address associated with the `INTERNET` interface is translated to the internal `WEB-SERVER`:
+
+{{<figure 
+    src="/images/fw-audit-nat.png"
+    alt="Dynamic versus Static NAT configuration."
+    width="650"
+    caption=""
+>}}
+
+When reviewing static NAT rules, we should identify which systems are being exposed and whether the exposure is justified.
+
+A common misconception is that NAT alone controls access between networks. In reality, NAT and ACLs perform different functions: NAT determines how traffic is translated, while ACLs determine whether the traffic is permitted. **NAT does not automatically permit Internet access**.
+
+Both controls must usually be considered together when reviewing traffic flows.
+
+# Automating the Review with Firewall-Audit
 
 
 
