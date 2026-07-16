@@ -1,13 +1,13 @@
 ---
 title: "Firewall Security Explained"
-date: "2026-07-03"
+date: "2026-07-16"
 author: "mollysec"
-description: "How to Review a Firewall Configuration."
+description: "How to make sense of a firewall configuration dump."
 featured: true
 tags: ["firewall","security","review","rules","cisco","asa","ftd"]
 categories: ""
 series: ""
-draft: true
+draft: false
 ---
 
 # Introduction
