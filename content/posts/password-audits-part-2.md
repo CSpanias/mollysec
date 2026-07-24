@@ -15,7 +15,7 @@ draft: false
 In [Part 1](/posts/password-audits-part-1/), we talked about how we can extract credentials from `NTDS` using [DCSync](/posts/password-audits-part-1/#dcsync-via-drsuapi) and [VSS](/posts/password-audits-part-1/#vss). Now, it is time to think about how to best handle the `NTDS` file. Extracting `NTDS` is typically the last step in a CTF, but it is just the first one here:
 
 ---
-~~Extract NTDS~~ &rarr; **Clean/Organise NTDS** &rarr; Crack hashes &rarr; Generate stats.  
+~~Extract NTDS~~ &rarr; **Clean/Organise NTDS** &rarr; Crack hashes &rarr; Analyse results  
 
 ---
 

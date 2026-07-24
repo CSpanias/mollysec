@@ -19,7 +19,7 @@ I recently went from just testing (close-to-zero-functionality) web apps and API
 This can be summed up as follows:
 
 ---
-**Extract NTDS** &rarr; Clean/Organise NTDS &rarr; Crack hashes &rarr; Generate stats.  
+**Extract NTDS** &rarr; Clean/Organise NTDS &rarr; Crack hashes &rarr; Analyse results  
 
 ---
 

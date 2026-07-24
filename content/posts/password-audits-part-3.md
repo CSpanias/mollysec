@@ -18,7 +18,8 @@ draft: false
 In [Part 1](/posts/password-audits-part-1/) we retrieved NTDS and in [Part 2](/posts/password-audits-part-2/) we organised it using [`hash-organiser`](https://github.com/CSpanias/hash-organiser). We are now ready to move to the next part of the process: recovering hashes.
 
 ---
-~~Extract NTDS~~ &rarr; ~~Clean/Organise NTDS~~ &rarr; **Crack hashes** &rarr; Generate stats.  
+
+~~Extract NTDS~~ &rarr; ~~Clean/Organise NTDS~~ &rarr; **Crack hashes** &rarr; Analyse results 
 
 ---
 
