@@ -311,5 +311,4 @@ In the next (and final) part, we will look at ways to analyse hashcat’s potfil
     caption=""
 >}}
 
-**Next:** [Password Audits Part 4: Analysing Results →]
-<!-- (/posts/password-audits-part-4/) -->
+**Next:** [Password Audits Part 4: Analysing Results →](/posts/password-audits-part-4/)
