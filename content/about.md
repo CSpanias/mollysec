@@ -6,7 +6,7 @@ draft: false
 
 # Who Am I?
 
-I am a penetester who tries to understand how things work and figure out how to make them better. Currently, my focus revolves mostly around Active Directory. I'm working towards a Diploma (who knows, maybe a BSc!) in Cybersecurity, and I've picked up a few industry certifications along the way, including [CRTP](https://www.alteredsecurity.com/adlab), [CAPE](https://academy.hackthebox.com/preview/certifications/htb-certified-active-directory-pentesting-expert), [CRTO](https://www.zeropointsecurity.co.uk/course/red-team-ops), [OSCP](https://www.offsec.com/courses/pen-200/), and [OSWA](https://www.offsec.com/courses/web-200/).
+I am a penetester who tries to understand how things work and figure out how to make them better. Currently, my focus revolves mostly around Active Directory. I was working towards a [Cyber Security BSc](https://www.open.ac.uk/courses/computing-it/degrees/bsc-cyber-security-r60/) but decided to stop pursuing it, and I've picked up a few industry certifications along the way, including [CRTP](https://www.alteredsecurity.com/adlab), [CAPE](https://academy.hackthebox.com/preview/certifications/htb-certified-active-directory-pentesting-expert), [CRTO](https://www.zeropointsecurity.co.uk/course/red-team-ops), [OSCP](https://www.offsec.com/courses/pen-200/), and [OSWA](https://www.offsec.com/courses/web-200/).
 
 I've only been in this field since early 2024, so expect a good amount of inaccuracies in my posts. That said, I'm always open to discussion and critical feedback if you spot something worth correcting or exploring further.
 
