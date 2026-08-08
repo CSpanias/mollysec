@@ -159,6 +159,8 @@ The user fails authentication two times against `DC02` (`badPwdCount` = `2`) and
 
 Notice that if the user successfully authenticates against `DC01`, the `badPwdCount` attribute does not reset globally (on all DCs) but just locally (on `DC01`):
 
+> *Do your eyes a favour and **open the following screenshots in a new tab**.*
+
 {{<figure 
     src="/images/pass-spray-non-rep-attr.png"
     alt="Verifying the non-replicated nature of the badPwdCount attribute."
