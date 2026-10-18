@@ -33,7 +33,11 @@ theme = 'PaperMod'
       ["\\(", "\\)"],
       ["$", "$"]
     ]
-  
+
+[module]
+  [[module.imports]]
+    path = "github.com/KKKZOZ/hugo-admonitions"
+
 [menu]
   [[menu.main]]
     name = 'Home'

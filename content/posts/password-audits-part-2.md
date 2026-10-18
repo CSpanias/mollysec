@@ -12,6 +12,9 @@ draft: false
 
 # Introduction
 
+> [!Warning]
+> The `hash-organiser` tool mentioned in the Vibe-Coding section was intially created as a PoC. Its functionality has now been integrated into the [`password-audit`](https://github.com/CSpanias/password-audit) tool.
+
 In [Part 1](/posts/password-audits-part-1/), we talked about how we can extract credentials from `NTDS` using [DCSync](/posts/password-audits-part-1/#dcsync-via-drsuapi) and [VSS](/posts/password-audits-part-1/#vss). Now, it is time to think about how to best handle the `NTDS` file. Extracting `NTDS` is typically the last step in a CTF, but it is just the first one here:
 
 ---
@@ -197,7 +200,7 @@ The goal here is not to create the next [build-you-own-x](https://github.com/cod
     caption=""
 >}}
 
-I hope you did not expect me to explain how I vide-coded [`hash-organiser`](https://github.com/CSpanias/pass-audit-tools/tree/main/hash-organiser); I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
+I hope you did not expect me to explain how I vide-coded `hash-organiser`; I just passed the above process to Copilot and asked him to generate a minimal bash script. Nothing fancy here! 
 
 The final script includes some optional stuff that we haven't talked about, so ignore those for now:
 

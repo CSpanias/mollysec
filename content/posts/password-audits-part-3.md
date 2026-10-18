@@ -13,9 +13,10 @@ draft: false
 
 # Introduction
 
-> *If you feel like experimenting yourself, the NT hash dataset can be generated using [this](https://github.com/CSpanias/pass-audit-tools/blob/main/generate-5k-nt-hashes.py) creatively-named script.*
+> [!Warning]
+> The `hash-organiser` and `phase-cracker` tools mentioned in the Introduction and Vibe-Coding sections, respectively, were intially created as PoCs. Their functionality have now been integrated into [`password-audit`](https://github.com/CSpanias/password-audit).
 
-In [Part 1](/posts/password-audits-part-1/) we retrieved NTDS and in [Part 2](/posts/password-audits-part-2/) we organised it using [`hash-organiser`](https://github.com/CSpanias/hash-organiser). We are now ready to move to the next part of the process: recovering hashes.
+In [Part 1](/posts/password-audits-part-1/) we retrieved NTDS and in [Part 2](/posts/password-audits-part-2/) we organised it using `hash-organiser`. We are now ready to move to the next part of the process: recovering hashes.
 
 ---
 
@@ -254,7 +255,7 @@ Now that we have an idea of what we want, let's jump to everyone's favourite pas
 
 # Vibe-Coding
 
-The main idea here is similar to our [previous PoC](https://mollysec.com/posts/password-audits-part-2/#vibe-coding): vibe-code a minimal PoC for automating the above process. We used Bash to create [`hash-organiser`](https://github.com/CSpanias/pass-audit-tools/tree/main/hash-organiser), so, for a breath of fresh air, this time we will use Python.
+The main idea here is similar to our [previous PoC](https://mollysec.com/posts/password-audits-part-2/#vibe-coding): vibe-code a minimal PoC for automating the above process. We used Bash to create `hash-organiser`, so, for a breath of fresh air, this time we will use Python.
 
 {{<figure 
     src="/images/vibe-coding-toy-story.png"
@@ -282,7 +283,7 @@ Let's get to the point. Within this JSON file there are two root keys:
     caption=""
 >}}
 
-The mighty [`phase-cracker`](https://github.com/CSpanias/pass-audit-tools/tree/main/phase-cracker) PoC has two main functions. Either it calculates the keyspace of each phase and provides a wildly-off estimated cracking time (`--estimate`) or it just executes all configured runs (`--estimate` flag omitted):
+The mighty `phase-cracker` PoC has two main functions. Either it calculates the keyspace of each phase and provides a wildly-off estimated cracking time (`--estimate`) or it just executes all configured runs (`--estimate` flag omitted):
 
 {{<figure 
     src="/images/phase-cracker_estimate.png"

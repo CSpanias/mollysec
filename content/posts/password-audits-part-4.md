@@ -13,6 +13,9 @@ draft: false
 
 # Introduction
 
+> [!Warning]
+> The `hash-organiser`, `ntds-organiser`, and `password-analyser` tools mentioned in this article were intially created as PoCs. Their functionality have now been integrated into [`password-audit`](https://github.com/CSpanias/password-audit).
+
 We [extracted the NTDS](https://mollysec.com/posts/password-audits-part-1/), [organised it](https://mollysec.com/posts/password-audits-part-2/), and finally [recovered as many hashes](https://mollysec.com/posts/password-audits-part-3/) as our timeframe and available resources allowed. We have now reached the final part of the process!
 
 Now, it is time to **produce some value from analysing our final dataset**!
@@ -116,11 +119,11 @@ Identifying useful questions is only half of the process. The next challenge is 
 
 For a small dataset, many of the findings discussed above could be identified manually. However, as the number of recovered credentials increases, the process quickly becomes time-consuming and repetitive. In addition, performing the analysis manually is not a particularly good use of time and increases the likelihood of errors and inconsistencies between assessments.
 
-Whilst several password auditing tools already exist, such as [Pwdlyser](https://github.com/ins1gn1a/Pwdlyser) and [Password Auditor](https://specopssoft.com/product/specops-password-auditor/), some are no longer actively maintained while others cannot be easily customised. This is the main reason for developing the [`password-analyser`](https://github.com/CSpanias/password-analyser) PoC.
+Whilst several password auditing tools already exist, such as [Pwdlyser](https://github.com/ins1gn1a/Pwdlyser) and [Password Auditor](https://specopssoft.com/product/specops-password-auditor/), some are no longer actively maintained while others cannot be easily customised. This is the main reason for developing the `password-analyser` PoC.
 
 As always, the goal here is not to do anything fancy, but a small quality of life improvement. This PoC consumes a small collection of input files and produces statistics, evidence tables, and "report-ready" commentary. Before looking at the output, it is worth briefly explaining where the tool obtains its data.
 
-On [part 2](https://mollysec.com/posts/password-audits-part-2/) of this series, I introduced [`hash-organiser`](https://github.com/CSpanias/pass-audit-tools/tree/main/hash-organiser). Since then, I created its big brother, [`ntds-organiser`](https://github.com/CSpanias/ntds-organiser), which does kind of the same job but much better. The `password-analyser` script uses `ntds-organiser`'s output files along with the Hashcat `.potfile` to perform the analysis.
+On [part 2](https://mollysec.com/posts/password-audits-part-2/) of this series, I introduced `hash-organiser`. Since then, I created its big brother, `ntds-organiser`, which does kind of the same job but much better. The `password-analyser` script uses `ntds-organiser`'s output files along with the Hashcat `.potfile` to perform the analysis.
 
 The workflow looks like this:
 
